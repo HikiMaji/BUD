@@ -1,0 +1,1321 @@
+{
+  "meta": {
+    "description": "步骤 ④-1 修正版 Eval-80 盲测一次性报告（严格零泄露）",
+    "excluded_3cam_seq": "2021_09_09_13_20_58",
+    "fit_frames": 100,
+    "eval_frames": 80,
+    "elapsed_sec": 649.51
+  },
+  "frozen_configs": {
+    "main_ms_cos_clear_sem": {
+      "q_scale": 95,
+      "top_k": 16,
+      "cos_weights": [
+        0.25,
+        0.35,
+        0.4
+      ],
+      "frame_norm_mode": "div_p95",
+      "gamma_cos": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "w_sem": 0.25,
+      "gamma_sem": [
+        1.4,
+        0.9,
+        0.4
+      ]
+    },
+    "ablation_ms_cos": {
+      "q_scale": 95,
+      "top_k": 16,
+      "cos_weights": [
+        0.34,
+        0.33,
+        0.33
+      ],
+      "frame_norm_mode": "med_p95",
+      "gamma_cos": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "w_sem": 0.0,
+      "gamma_sem": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "eval_attack_generation_stats": {
+    "m1": {
+      "scaled_pgd_0.5sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 0.4367
+      },
+      "scaled_pgd_1.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 0.8735
+      },
+      "local_removal_1.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 0.8735,
+        "mean_prob_drop": 0.7788
+      },
+      "local_ghost_2.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 1.7469,
+        "mean_max_ghost_prob": 0.8908
+      },
+      "local_near0_6m_removal_2.0sigma": {
+        "valid": 66,
+        "total": 80,
+        "linf_mean": 1.7714,
+        "mean_prob_drop": 0.8241,
+        "mean_in_0_6m_ratio": 1.0
+      },
+      "local_ghost_occluded_2.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 1.7469,
+        "mean_max_ghost_prob": 0.9459,
+        "mean_in_occ_ratio": 0.9995
+      }
+    },
+    "m2": {
+      "scaled_pgd_0.5sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 0.4216
+      },
+      "scaled_pgd_1.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 0.8433
+      },
+      "local_removal_1.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 0.8433,
+        "mean_prob_drop": 0.7833
+      },
+      "local_ghost_2.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 1.6866,
+        "mean_max_ghost_prob": 0.8855
+      },
+      "local_near0_6m_removal_2.0sigma": {
+        "valid": 65,
+        "total": 80,
+        "linf_mean": 1.6458,
+        "mean_prob_drop": 0.7197,
+        "mean_in_0_6m_ratio": 1.0
+      },
+      "local_ghost_occluded_2.0sigma": {
+        "valid": 80,
+        "total": 80,
+        "linf_mean": 1.6866,
+        "mean_max_ghost_prob": 0.9178,
+        "mean_in_occ_ratio": 0.9999
+      }
+    }
+  },
+  "eval_results": {
+    "main_ms_cos_clear_sem": {
+      "tier1_unified": {
+        "equal_5pct_total_fpr": {
+          "threshold": 4.093482,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.1,
+          "m2_fpr": 0.0
+        },
+        "fit_frozen_threshold": {
+          "threshold": 4.3323,
+          "total_fpr": 0.025,
+          "m1_fpr": 0.05,
+          "m2_fpr": 0.0
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.65,
+              "m2": 0.7125,
+              "overall": 0.68125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.575,
+              "m2": 0.6625,
+              "overall": 0.61875
+            },
+            "auroc": {
+              "m1": 0.83203,
+              "m2": 0.91969,
+              "overall": 0.87953
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.7625,
+              "m2": 0.8,
+              "overall": 0.78125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.7125,
+              "m2": 0.75,
+              "overall": 0.73125
+            },
+            "auroc": {
+              "m1": 0.89219,
+              "m2": 0.93609,
+              "overall": 0.9168
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.4875,
+              "m2": 0.3125,
+              "overall": 0.4
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.4,
+              "m2": 0.15,
+              "overall": 0.275
+            },
+            "auroc": {
+              "m1": 0.75922,
+              "m2": 0.85547,
+              "overall": 0.79664
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9125,
+              "m2": 0.775,
+              "overall": 0.84375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.8625,
+              "m2": 0.7125,
+              "overall": 0.7875
+            },
+            "auroc": {
+              "m1": 0.97062,
+              "m2": 0.99672,
+              "overall": 0.97668
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.39394,
+              "m2": 0.16923,
+              "overall": 0.28244
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.31818,
+              "m2": 0.04615,
+              "overall": 0.18321
+            },
+            "auroc": {
+              "m1": 0.78939,
+              "m2": 0.82385,
+              "overall": 0.79485
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9625,
+              "m2": 0.9125,
+              "overall": 0.9375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.9375,
+              "m2": 0.9,
+              "overall": 0.91875
+            },
+            "auroc": {
+              "m1": 0.98938,
+              "m2": 0.99578,
+              "overall": 0.98863
+            }
+          }
+        }
+      },
+      "tier2_sensor_only": {
+        "equal_5pct_total_fpr": {
+          "threshold": 0.900266,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.075,
+          "m2_fpr": 0.025
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.0,
+          "total_fpr": 0.0125,
+          "m1_fpr": 0.025,
+          "m2_fpr": 0.0
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.6125,
+              "m2": 0.825,
+              "overall": 0.71875
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.375,
+              "m2": 0.7625,
+              "overall": 0.56875
+            },
+            "auroc": {
+              "m1": 0.83328,
+              "m2": 0.92047,
+              "overall": 0.88289
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.725,
+              "m2": 0.8875,
+              "overall": 0.80625
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.675,
+              "m2": 0.825,
+              "overall": 0.75
+            },
+            "auroc": {
+              "m1": 0.89328,
+              "m2": 0.93656,
+              "overall": 0.91898
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.4375,
+              "m2": 0.7125,
+              "overall": 0.575
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.1125,
+              "m2": 0.4125,
+              "overall": 0.2625
+            },
+            "auroc": {
+              "m1": 0.75984,
+              "m2": 0.855,
+              "overall": 0.81574
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9,
+              "m2": 0.9625,
+              "overall": 0.93125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.725,
+              "m2": 0.85,
+              "overall": 0.7875
+            },
+            "auroc": {
+              "m1": 0.97078,
+              "m2": 0.99672,
+              "overall": 0.98691
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.31818,
+              "m2": 0.32308,
+              "overall": 0.32061
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.13636,
+              "m2": 0.24615,
+              "overall": 0.19084
+            },
+            "auroc": {
+              "m1": 0.78883,
+              "m2": 0.82423,
+              "overall": 0.80821
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9375,
+              "m2": 0.95,
+              "overall": 0.94375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.875,
+              "m2": 0.925,
+              "overall": 0.9
+            },
+            "auroc": {
+              "m1": 0.98969,
+              "m2": 0.99578,
+              "overall": 0.99293
+            }
+          }
+        }
+      },
+      "tier3_sensor_dist": {
+        "equal_5pct_total_fpr": {
+          "threshold": 0.889831,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.0875,
+          "m2_fpr": 0.0125
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.0,
+          "total_fpr": 0.0125,
+          "m1_fpr": 0.025,
+          "m2_fpr": 0.0
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.6125,
+              "m2": 0.825,
+              "overall": 0.71875
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.3625,
+              "m2": 0.7625,
+              "overall": 0.5625
+            },
+            "auroc": {
+              "m1": 0.83547,
+              "m2": 0.9225,
+              "overall": 0.88672
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.75,
+              "m2": 0.8875,
+              "overall": 0.81875
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.6625,
+              "m2": 0.8125,
+              "overall": 0.7375
+            },
+            "auroc": {
+              "m1": 0.90031,
+              "m2": 0.93875,
+              "overall": 0.92437
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.425,
+              "m2": 0.675,
+              "overall": 0.55
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.1,
+              "m2": 0.375,
+              "overall": 0.2375
+            },
+            "auroc": {
+              "m1": 0.75625,
+              "m2": 0.8557,
+              "overall": 0.814
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9,
+              "m2": 0.95,
+              "overall": 0.925
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.725,
+              "m2": 0.8375,
+              "overall": 0.78125
+            },
+            "auroc": {
+              "m1": 0.97047,
+              "m2": 0.99703,
+              "overall": 0.98707
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.33333,
+              "m2": 0.32308,
+              "overall": 0.32824
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.09091,
+              "m2": 0.21538,
+              "overall": 0.15267
+            },
+            "auroc": {
+              "m1": 0.77888,
+              "m2": 0.82019,
+              "overall": 0.80112
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9625,
+              "m2": 0.95,
+              "overall": 0.95625
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.875,
+              "m2": 0.925,
+              "overall": 0.9
+            },
+            "auroc": {
+              "m1": 0.99125,
+              "m2": 0.99625,
+              "overall": 0.99363
+            }
+          }
+        }
+      },
+      "tier4_sensor_dist_vis": {
+        "equal_5pct_total_fpr": {
+          "threshold": 0.911374,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.0875,
+          "m2_fpr": 0.0125
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.0,
+          "total_fpr": 0.00625,
+          "m1_fpr": 0.0125,
+          "m2_fpr": 0.0
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.725,
+              "m2": 0.775,
+              "overall": 0.75
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.7,
+              "m2": 0.7375,
+              "overall": 0.71875
+            },
+            "auroc": {
+              "m1": 0.84391,
+              "m2": 0.89516,
+              "overall": 0.87211
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.7875,
+              "m2": 0.825,
+              "overall": 0.80625
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.75,
+              "m2": 0.775,
+              "overall": 0.7625
+            },
+            "auroc": {
+              "m1": 0.88734,
+              "m2": 0.91797,
+              "overall": 0.9041
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.7,
+              "m2": 0.6625,
+              "overall": 0.68125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.6875,
+              "m2": 0.625,
+              "overall": 0.65625
+            },
+            "auroc": {
+              "m1": 0.79781,
+              "m2": 0.83062,
+              "overall": 0.81266
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.7125,
+              "m2": 0.5875,
+              "overall": 0.65
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.6125,
+              "m2": 0.4875,
+              "overall": 0.55
+            },
+            "auroc": {
+              "m1": 0.89578,
+              "m2": 0.9375,
+              "overall": 0.90797
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.57576,
+              "m2": 0.4,
+              "overall": 0.48855
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.48485,
+              "m2": 0.35385,
+              "overall": 0.41985
+            },
+            "auroc": {
+              "m1": 0.7642,
+              "m2": 0.72481,
+              "overall": 0.74003
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.5875,
+              "m2": 0.4625,
+              "overall": 0.525
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.475,
+              "m2": 0.2125,
+              "overall": 0.34375
+            },
+            "auroc": {
+              "m1": 0.85156,
+              "m2": 0.92594,
+              "overall": 0.88172
+            }
+          }
+        }
+      }
+    },
+    "ablation_ms_cos": {
+      "tier1_unified": {
+        "equal_5pct_total_fpr": {
+          "threshold": 1.515646,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.0375,
+          "m2_fpr": 0.0625
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.669812,
+          "total_fpr": 0.0,
+          "m1_fpr": 0.0,
+          "m2_fpr": 0.0
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.625,
+              "m2": 0.8125,
+              "overall": 0.71875
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.1,
+              "m2": 0.2625,
+              "overall": 0.18125
+            },
+            "auroc": {
+              "m1": 0.93,
+              "m2": 0.91781,
+              "overall": 0.91945
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.925,
+              "m2": 0.95,
+              "overall": 0.9375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.65,
+              "m2": 0.8125,
+              "overall": 0.73125
+            },
+            "auroc": {
+              "m1": 0.98969,
+              "m2": 0.98625,
+              "overall": 0.98523
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.0375,
+              "m2": 0.05,
+              "overall": 0.04375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.0,
+              "overall": 0.0
+            },
+            "auroc": {
+              "m1": 0.56281,
+              "m2": 0.53406,
+              "overall": 0.53066
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.65,
+              "m2": 0.7125,
+              "overall": 0.68125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.225,
+              "m2": 0.2625,
+              "overall": 0.24375
+            },
+            "auroc": {
+              "m1": 0.94859,
+              "m2": 0.94383,
+              "overall": 0.93514
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.0303,
+              "m2": 0.09231,
+              "overall": 0.06107
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.01515,
+              "m2": 0.0,
+              "overall": 0.00763
+            },
+            "auroc": {
+              "m1": 0.66998,
+              "m2": 0.57481,
+              "overall": 0.60618
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.725,
+              "m2": 0.7125,
+              "overall": 0.71875
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.275,
+              "m2": 0.25,
+              "overall": 0.2625
+            },
+            "auroc": {
+              "m1": 0.95516,
+              "m2": 0.92773,
+              "overall": 0.9335
+            }
+          }
+        }
+      },
+      "tier2_sensor_only": {
+        "equal_5pct_total_fpr": {
+          "threshold": 0.701768,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.0375,
+          "m2_fpr": 0.0625
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.0,
+          "total_fpr": 0.01875,
+          "m1_fpr": 0.0,
+          "m2_fpr": 0.0375
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.625,
+              "m2": 0.8375,
+              "overall": 0.73125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0625,
+              "m2": 0.7875,
+              "overall": 0.425
+            },
+            "auroc": {
+              "m1": 0.93641,
+              "m2": 0.92547,
+              "overall": 0.92625
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.9125,
+              "m2": 0.95,
+              "overall": 0.93125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.5125,
+              "m2": 0.925,
+              "overall": 0.71875
+            },
+            "auroc": {
+              "m1": 0.98984,
+              "m2": 0.98781,
+              "overall": 0.98145
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.0375,
+              "m2": 0.05,
+              "overall": 0.04375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.0125,
+              "overall": 0.00625
+            },
+            "auroc": {
+              "m1": 0.55797,
+              "m2": 0.53312,
+              "overall": 0.54645
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.6125,
+              "m2": 0.775,
+              "overall": 0.69375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.125,
+              "m2": 0.6,
+              "overall": 0.3625
+            },
+            "auroc": {
+              "m1": 0.94828,
+              "m2": 0.94914,
+              "overall": 0.94408
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.0303,
+              "m2": 0.09231,
+              "overall": 0.06107
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.06154,
+              "overall": 0.03053
+            },
+            "auroc": {
+              "m1": 0.66913,
+              "m2": 0.56904,
+              "overall": 0.61064
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.725,
+              "m2": 0.7375,
+              "overall": 0.73125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.125,
+              "m2": 0.65,
+              "overall": 0.3875
+            },
+            "auroc": {
+              "m1": 0.95453,
+              "m2": 0.93531,
+              "overall": 0.93742
+            }
+          }
+        }
+      },
+      "tier3_sensor_dist": {
+        "equal_5pct_total_fpr": {
+          "threshold": 0.609602,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.0375,
+          "m2_fpr": 0.0625
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.0,
+          "total_fpr": 0.00625,
+          "m1_fpr": 0.0,
+          "m2_fpr": 0.0125
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.8625,
+              "m2": 0.8375,
+              "overall": 0.85
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.05,
+              "m2": 0.775,
+              "overall": 0.4125
+            },
+            "auroc": {
+              "m1": 0.97016,
+              "m2": 0.93469,
+              "overall": 0.94445
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.95,
+              "m2": 0.9625,
+              "overall": 0.95625
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.6125,
+              "m2": 0.925,
+              "overall": 0.76875
+            },
+            "auroc": {
+              "m1": 0.99734,
+              "m2": 0.99172,
+              "overall": 0.98883
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.025,
+              "m2": 0.075,
+              "overall": 0.05
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.0,
+              "overall": 0.0
+            },
+            "auroc": {
+              "m1": 0.54227,
+              "m2": 0.54031,
+              "overall": 0.53955
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.7,
+              "m2": 0.825,
+              "overall": 0.7625
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.1125,
+              "m2": 0.625,
+              "overall": 0.36875
+            },
+            "auroc": {
+              "m1": 0.95641,
+              "m2": 0.95555,
+              "overall": 0.95314
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.04545,
+              "m2": 0.07692,
+              "overall": 0.06107
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.01538,
+              "overall": 0.00763
+            },
+            "auroc": {
+              "m1": 0.53826,
+              "m2": 0.5524,
+              "overall": 0.54296
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.8375,
+              "m2": 0.8,
+              "overall": 0.81875
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.2125,
+              "m2": 0.625,
+              "overall": 0.41875
+            },
+            "auroc": {
+              "m1": 0.97469,
+              "m2": 0.9443,
+              "overall": 0.95326
+            }
+          }
+        }
+      },
+      "tier4_sensor_dist_vis": {
+        "equal_5pct_total_fpr": {
+          "threshold": 1.046721,
+          "total_fpr": 0.05,
+          "m1_fpr": 0.0,
+          "m2_fpr": 0.1
+        },
+        "fit_frozen_threshold": {
+          "threshold": 1.0,
+          "total_fpr": 0.06875,
+          "m1_fpr": 0.0,
+          "m2_fpr": 0.1375
+        },
+        "attacks": {
+          "scaled_pgd_0.5sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.1875,
+              "m2": 0.8125,
+              "overall": 0.5
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.3125,
+              "m2": 0.8375,
+              "overall": 0.575
+            },
+            "auroc": {
+              "m1": 0.98234,
+              "m2": 0.93828,
+              "overall": 0.93246
+            }
+          },
+          "scaled_pgd_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.8,
+              "m2": 0.9625,
+              "overall": 0.88125
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.825,
+              "m2": 0.9625,
+              "overall": 0.89375
+            },
+            "auroc": {
+              "m1": 0.9975,
+              "m2": 0.99359,
+              "overall": 0.97781
+            }
+          },
+          "local_removal_1.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.0,
+              "m2": 0.0875,
+              "overall": 0.04375
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.1125,
+              "overall": 0.05625
+            },
+            "auroc": {
+              "m1": 0.60406,
+              "m2": 0.5275,
+              "overall": 0.55105
+            }
+          },
+          "local_ghost_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.175,
+              "m2": 0.75,
+              "overall": 0.4625
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.2375,
+              "m2": 0.7625,
+              "overall": 0.5
+            },
+            "auroc": {
+              "m1": 0.96031,
+              "m2": 0.92625,
+              "overall": 0.91648
+            }
+          },
+          "local_near0_6m_removal_2.0sigma": {
+            "valid_counts": {
+              "m1": 66,
+              "m2": 65,
+              "total": 131
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.0,
+              "m2": 0.10769,
+              "overall": 0.05344
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.0,
+              "m2": 0.15385,
+              "overall": 0.07634
+            },
+            "auroc": {
+              "m1": 0.64015,
+              "m2": 0.54692,
+              "overall": 0.57276
+            }
+          },
+          "local_ghost_occluded_2.0sigma": {
+            "valid_counts": {
+              "m1": 80,
+              "m2": 80,
+              "total": 160
+            },
+            "tpr_at_5pct_total_fpr": {
+              "m1": 0.2625,
+              "m2": 0.8375,
+              "overall": 0.55
+            },
+            "tpr_at_fit_frozen_thresh": {
+              "m1": 0.4,
+              "m2": 0.85,
+              "overall": 0.625
+            },
+            "auroc": {
+              "m1": 0.96828,
+              "m2": 0.94797,
+              "overall": 0.93328
+            }
+          }
+        }
+      }
+    }
+  }
+}

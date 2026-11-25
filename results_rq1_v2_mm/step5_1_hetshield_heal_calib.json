@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "description": "步骤 ⑤-1 修复版 HEAL 64ch HetShield ConvGRU 权重与纯 Fit 门限标定",
+    "fit_sequences": [
+      "2021_08_21_15_41_04",
+      "2021_08_16_22_26_54",
+      "2021_08_18_22_16_12",
+      "2021_08_20_20_39_00",
+      "2021_08_21_22_21_37",
+      "2021_08_22_10_46_58",
+      "2021_08_23_11_22_46",
+      "2021_08_18_19_11_02",
+      "2021_08_21_09_09_41",
+      "2021_08_22_07_24_12",
+      "2021_09_09_23_21_21"
+    ],
+    "stride": 1,
+    "epochs": 4,
+    "energy_thresh": 0.5,
+    "shared_ckpt": "/root/autodl-tmp/proj_dir2_hetero_trust/checkpoints_v2_mm/hetshield_heal_64ch_shared.pth",
+    "persensor_ckpt": "/root/autodl-tmp/proj_dir2_hetero_trust/checkpoints_v2_mm/hetshield_heal_64ch_persensor.pth",
+    "elapsed_sec": 1983.64,
+    "git_commit": "ece9a76afe5534df400923745ec3b4e60e9f4cb8",
+    "git_short": "ece9a76",
+    "git_branch": "master",
+    "git_dirty_at_write": false
+  },
+  "train_mse_history": [
+    {
+      "epoch": 1,
+      "shared_mse": 0.103075,
+      "m1_mse": 0.083347,
+      "m2_mse": 0.118814
+    },
+    {
+      "epoch": 2,
+      "shared_mse": 0.09838,
+      "m1_mse": 0.079649,
+      "m2_mse": 0.112584
+    },
+    {
+      "epoch": 3,
+      "shared_mse": 0.096367,
+      "m1_mse": 0.078488,
+      "m2_mse": 0.109283
+    },
+    {
+      "epoch": 4,
+      "shared_mse": 0.094758,
+      "m1_mse": 0.077377,
+      "m2_mse": 0.106436
+    }
+  ],
+  "fit_tail_one_step_mse": {
+    "shared": 0.101138,
+    "m1": 0.088723,
+    "m2": 0.113864,
+    "identity_baseline": 0.093492
+  },
+  "paper_default_params": {
+    "alpha": 0.5,
+    "tau_th": 0.3,
+    "temperature": 0.1
+  },
+  "fit_tuned_shared_tau_p95": 0.818125,
+  "fit_tuned_shared_tau_p98": 0.886427,
+  "fit_persensor_tau_p95": {
+    "m1": 0.225933,
+    "m2": 0.885049
+  },
+  "fit_clean_sk_quantiles": {
+    "shared_m1": {
+      "p50": 0.250554,
+      "p90": 0.459973,
+      "p95": 0.509942,
+      "p99": 0.513632
+    },
+    "shared_m2": {
+      "p50": 0.591577,
+      "p90": 0.818213,
+      "p95": 0.884829,
+      "p99": 0.891412
+    },
+    "persensor_m1": {
+      "p50": 0.172081,
+      "p90": 0.219322,
+      "p95": 0.225933,
+      "p99": 0.245267
+    },
+    "persensor_m2": {
+      "p50": 0.623485,
+      "p90": 0.828527,
+      "p95": 0.885049,
+      "p99": 0.890852
+    }
+  }
+}

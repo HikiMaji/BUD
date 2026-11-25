@@ -1,0 +1,2547 @@
+{
+  "meta": {
+    "description": "步骤 ⑤-4 定向局部攻击成功率 ASR 全基线同台评测报告（Dev-320，匹配半径 3.0m，2000 次 Block-Bootstrap 95% CI）",
+    "match_radius_m": 3.0,
+    "bootstrap_iters": 2000,
+    "fleet_size_summary": {
+      "total_frames": 320,
+      "by_total_vehicles": {
+        "2_vehicles (1_collab)": 41,
+        "3_vehicles (2_collab)": 145,
+        "4_vehicles (3_collab)": 54,
+        "5_vehicles (4_collab)": 50,
+        "6_vehicles (5_collab)": 30
+      },
+      "by_collab_tier": {
+        "1_collab (2_vehicles)": 41,
+        "2_collab (3_vehicles)": 145,
+        "ge3_collab (4_to_6_vehicles)": 134
+      }
+    },
+    "elapsed_sec": 0.0,
+    "git_commit": "564ca8dde6e1e55c539da70c50d8868ece17632e",
+    "git_short": "564ca8d",
+    "git_branch": "master",
+    "git_dirty_at_write": false
+  },
+  "two_vehicle_hetero_pair_asr": {
+    "m1|object_fabrication": {
+      "num_sequences": 8,
+      "total_valid_targets": 640,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.55469,
+          "ci95": [
+            0.46315,
+            0.61021
+          ],
+          "succ": 355,
+          "total_targets": 640
+        },
+        "no_defense": {
+          "asr": 0.96719,
+          "ci95": [
+            0.92724,
+            0.99067
+          ],
+          "succ": 619,
+          "total_targets": 640
+        },
+        "whole_cav_drop": {
+          "asr": 0.42656,
+          "ci95": [
+            0.25961,
+            0.60564
+          ],
+          "succ": 273,
+          "total_targets": 640
+        },
+        "hetshield_paper": {
+          "asr": 0.89062,
+          "ci95": [
+            0.82203,
+            0.93084
+          ],
+          "succ": 570,
+          "total_targets": 640
+        },
+        "hetshield_tuned": {
+          "asr": 0.96719,
+          "ci95": [
+            0.92724,
+            0.99067
+          ],
+          "succ": 619,
+          "total_targets": 640
+        },
+        "lucia": {
+          "asr": 0.00156,
+          "ci95": [
+            0.0,
+            0.00633
+          ],
+          "succ": 1,
+          "total_targets": 640
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.4125,
+          "diff_ci95": [
+            -0.50605,
+            -0.35714
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": 0.12812,
+          "diff_ci95": [
+            -0.06275,
+            0.27399
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.33594,
+          "diff_ci95": [
+            -0.37408,
+            -0.29862
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.4125,
+          "diff_ci95": [
+            -0.50605,
+            -0.35714
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.55312,
+          "diff_ci95": [
+            0.45661,
+            0.61021
+          ],
+          "significant_lower_asr": false
+        }
+      }
+    },
+    "m1|object_removal": {
+      "num_sequences": 8,
+      "total_valid_targets": 585,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.06154,
+          "ci95": [
+            0.03238,
+            0.11865
+          ],
+          "succ": 36,
+          "total_targets": 585
+        },
+        "no_defense": {
+          "asr": 0.63248,
+          "ci95": [
+            0.54384,
+            0.76819
+          ],
+          "succ": 370,
+          "total_targets": 585
+        },
+        "whole_cav_drop": {
+          "asr": 0.1453,
+          "ci95": [
+            0.07781,
+            0.27644
+          ],
+          "succ": 85,
+          "total_targets": 585
+        },
+        "hetshield_paper": {
+          "asr": 0.36752,
+          "ci95": [
+            0.27407,
+            0.4769
+          ],
+          "succ": 215,
+          "total_targets": 585
+        },
+        "hetshield_tuned": {
+          "asr": 0.63248,
+          "ci95": [
+            0.54384,
+            0.76819
+          ],
+          "succ": 370,
+          "total_targets": 585
+        },
+        "lucia": {
+          "asr": 0.03419,
+          "ci95": [
+            0.01816,
+            0.0593
+          ],
+          "succ": 20,
+          "total_targets": 585
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.57094,
+          "diff_ci95": [
+            -0.69376,
+            -0.48327
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.08376,
+          "diff_ci95": [
+            -0.16516,
+            -0.04167
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.30598,
+          "diff_ci95": [
+            -0.4,
+            -0.19694
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.57094,
+          "diff_ci95": [
+            -0.69376,
+            -0.48327
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.02735,
+          "diff_ci95": [
+            0.01011,
+            0.06239
+          ],
+          "significant_lower_asr": false
+        }
+      }
+    },
+    "m1|occluded_fabrication": {
+      "num_sequences": 8,
+      "total_valid_targets": 640,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.64531,
+          "ci95": [
+            0.59602,
+            0.69838
+          ],
+          "succ": 413,
+          "total_targets": 640
+        },
+        "no_defense": {
+          "asr": 0.99375,
+          "ci95": [
+            0.98633,
+            1.0
+          ],
+          "succ": 636,
+          "total_targets": 640
+        },
+        "whole_cav_drop": {
+          "asr": 0.47656,
+          "ci95": [
+            0.28385,
+            0.71011
+          ],
+          "succ": 305,
+          "total_targets": 640
+        },
+        "hetshield_paper": {
+          "asr": 0.97031,
+          "ci95": [
+            0.95262,
+            0.99074
+          ],
+          "succ": 621,
+          "total_targets": 640
+        },
+        "hetshield_tuned": {
+          "asr": 0.99375,
+          "ci95": [
+            0.98633,
+            1.0
+          ],
+          "succ": 636,
+          "total_targets": 640
+        },
+        "lucia": {
+          "asr": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "succ": 0,
+          "total_targets": 640
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.34844,
+          "diff_ci95": [
+            -0.40303,
+            -0.29852
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": 0.16875,
+          "diff_ci95": [
+            -0.01798,
+            0.32703
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.325,
+          "diff_ci95": [
+            -0.37742,
+            -0.27593
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.34844,
+          "diff_ci95": [
+            -0.40303,
+            -0.29852
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.64531,
+          "diff_ci95": [
+            0.59602,
+            0.69838
+          ],
+          "significant_lower_asr": false
+        }
+      }
+    },
+    "m2|object_fabrication": {
+      "num_sequences": 8,
+      "total_valid_targets": 640,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.44688,
+          "ci95": [
+            0.3959,
+            0.51092
+          ],
+          "succ": 286,
+          "total_targets": 640
+        },
+        "no_defense": {
+          "asr": 0.96094,
+          "ci95": [
+            0.92029,
+            0.99049
+          ],
+          "succ": 615,
+          "total_targets": 640
+        },
+        "whole_cav_drop": {
+          "asr": 0.56094,
+          "ci95": [
+            0.42323,
+            0.6856
+          ],
+          "succ": 359,
+          "total_targets": 640
+        },
+        "hetshield_paper": {
+          "asr": 0.29375,
+          "ci95": [
+            0.25497,
+            0.3446
+          ],
+          "succ": 188,
+          "total_targets": 640
+        },
+        "hetshield_tuned": {
+          "asr": 0.9625,
+          "ci95": [
+            0.92105,
+            0.99049
+          ],
+          "succ": 616,
+          "total_targets": 640
+        },
+        "lucia": {
+          "asr": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "succ": 0,
+          "total_targets": 640
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.51406,
+          "diff_ci95": [
+            -0.58678,
+            -0.41176
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.11406,
+          "diff_ci95": [
+            -0.20635,
+            0.00164
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.15313,
+          "diff_ci95": [
+            0.09921,
+            0.23004
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.51562,
+          "diff_ci95": [
+            -0.5875,
+            -0.41176
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.44688,
+          "diff_ci95": [
+            0.3959,
+            0.51092
+          ],
+          "significant_lower_asr": false
+        }
+      }
+    },
+    "m2|object_removal": {
+      "num_sequences": 8,
+      "total_valid_targets": 581,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.01721,
+          "ci95": [
+            0.00551,
+            0.03737
+          ],
+          "succ": 10,
+          "total_targets": 581
+        },
+        "no_defense": {
+          "asr": 0.6747,
+          "ci95": [
+            0.5711,
+            0.83393
+          ],
+          "succ": 392,
+          "total_targets": 581
+        },
+        "whole_cav_drop": {
+          "asr": 0.1704,
+          "ci95": [
+            0.10669,
+            0.30296
+          ],
+          "succ": 99,
+          "total_targets": 581
+        },
+        "hetshield_paper": {
+          "asr": 0.0241,
+          "ci95": [
+            0.00748,
+            0.05636
+          ],
+          "succ": 14,
+          "total_targets": 581
+        },
+        "hetshield_tuned": {
+          "asr": 0.66781,
+          "ci95": [
+            0.56343,
+            0.82818
+          ],
+          "succ": 388,
+          "total_targets": 581
+        },
+        "lucia": {
+          "asr": 0.00516,
+          "ci95": [
+            0.0,
+            0.0156
+          ],
+          "succ": 3,
+          "total_targets": 581
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.65749,
+          "diff_ci95": [
+            -0.8095,
+            -0.55614
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.15318,
+          "diff_ci95": [
+            -0.27628,
+            -0.09067
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.00688,
+          "diff_ci95": [
+            -0.02718,
+            0.00483
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.6506,
+          "diff_ci95": [
+            -0.80469,
+            -0.54914
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.01205,
+          "diff_ci95": [
+            0.00419,
+            0.02681
+          ],
+          "significant_lower_asr": false
+        }
+      }
+    },
+    "m2|occluded_fabrication": {
+      "num_sequences": 8,
+      "total_valid_targets": 640,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.72344,
+          "ci95": [
+            0.64077,
+            0.83186
+          ],
+          "succ": 463,
+          "total_targets": 640
+        },
+        "no_defense": {
+          "asr": 0.99687,
+          "ci95": [
+            0.99392,
+            1.0
+          ],
+          "succ": 638,
+          "total_targets": 640
+        },
+        "whole_cav_drop": {
+          "asr": 0.77344,
+          "ci95": [
+            0.64054,
+            0.90171
+          ],
+          "succ": 495,
+          "total_targets": 640
+        },
+        "hetshield_paper": {
+          "asr": 0.52969,
+          "ci95": [
+            0.43958,
+            0.64983
+          ],
+          "succ": 339,
+          "total_targets": 640
+        },
+        "hetshield_tuned": {
+          "asr": 0.99687,
+          "ci95": [
+            0.99392,
+            1.0
+          ],
+          "succ": 638,
+          "total_targets": 640
+        },
+        "lucia": {
+          "asr": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "succ": 0,
+          "total_targets": 640
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.27344,
+          "diff_ci95": [
+            -0.35606,
+            -0.164
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.05,
+          "diff_ci95": [
+            -0.18493,
+            0.11829
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.19375,
+          "diff_ci95": [
+            0.09969,
+            0.32679
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.27344,
+          "diff_ci95": [
+            -0.35606,
+            -0.164
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.72344,
+          "diff_ci95": [
+            0.64077,
+            0.83186
+          ],
+          "significant_lower_asr": false
+        }
+      }
+    }
+  },
+  "mixed_multicav_fleet_asr": {
+    "collab_2|atk_m1|object_fabrication": {
+      "num_sequences": 5,
+      "total_valid_targets": 290,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.34138,
+          "ci95": [
+            0.19178,
+            0.49306
+          ],
+          "succ": 99,
+          "total_targets": 290
+        },
+        "no_defense": {
+          "asr": 0.98966,
+          "ci95": [
+            0.9784,
+            1.0
+          ],
+          "succ": 287,
+          "total_targets": 290
+        },
+        "whole_cav_drop": {
+          "asr": 0.39655,
+          "ci95": [
+            0.15172,
+            0.64138
+          ],
+          "succ": 115,
+          "total_targets": 290
+        },
+        "hetshield_paper": {
+          "asr": 0.70345,
+          "ci95": [
+            0.60853,
+            0.78618
+          ],
+          "succ": 204,
+          "total_targets": 290
+        },
+        "hetshield_tuned": {
+          "asr": 0.98966,
+          "ci95": [
+            0.9784,
+            1.0
+          ],
+          "succ": 287,
+          "total_targets": 290
+        },
+        "lucia": {
+          "asr": 0.76897,
+          "ci95": [
+            0.35714,
+            1.0
+          ],
+          "succ": 223,
+          "total_targets": 290
+        },
+        "robosac": {
+          "asr": 0.98276,
+          "ci95": [
+            0.97078,
+            0.99632
+          ],
+          "succ": 285,
+          "total_targets": 290
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.64828,
+          "diff_ci95": [
+            -0.80137,
+            -0.49306
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.05517,
+          "diff_ci95": [
+            -0.43791,
+            0.27431
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.36207,
+          "diff_ci95": [
+            -0.50309,
+            -0.24138
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.64828,
+          "diff_ci95": [
+            -0.80137,
+            -0.49306
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.42759,
+          "diff_ci95": [
+            -0.69565,
+            -0.12059
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.64138,
+          "diff_ci95": [
+            -0.79452,
+            -0.48611
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_2|atk_m1|object_removal": {
+      "num_sequences": 5,
+      "total_valid_targets": 289,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.01038,
+          "ci95": [
+            0.0,
+            0.02545
+          ],
+          "succ": 3,
+          "total_targets": 289
+        },
+        "no_defense": {
+          "asr": 0.45675,
+          "ci95": [
+            0.24658,
+            0.67133
+          ],
+          "succ": 132,
+          "total_targets": 289
+        },
+        "whole_cav_drop": {
+          "asr": 0.10035,
+          "ci95": [
+            0.00368,
+            0.22741
+          ],
+          "succ": 29,
+          "total_targets": 289
+        },
+        "hetshield_paper": {
+          "asr": 0.12111,
+          "ci95": [
+            0.03082,
+            0.2342
+          ],
+          "succ": 35,
+          "total_targets": 289
+        },
+        "hetshield_tuned": {
+          "asr": 0.45675,
+          "ci95": [
+            0.24658,
+            0.67133
+          ],
+          "succ": 132,
+          "total_targets": 289
+        },
+        "lucia": {
+          "asr": 0.31142,
+          "ci95": [
+            0.12459,
+            0.53704
+          ],
+          "succ": 90,
+          "total_targets": 289
+        },
+        "robosac": {
+          "asr": 0.45675,
+          "ci95": [
+            0.24658,
+            0.67133
+          ],
+          "succ": 132,
+          "total_targets": 289
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.44637,
+          "diff_ci95": [
+            -0.66007,
+            -0.23973
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.08997,
+          "diff_ci95": [
+            -0.21184,
+            -0.00368
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.11073,
+          "diff_ci95": [
+            -0.23048,
+            -0.02397
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.44637,
+          "diff_ci95": [
+            -0.66007,
+            -0.23973
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.30104,
+          "diff_ci95": [
+            -0.53704,
+            -0.10377
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.44637,
+          "diff_ci95": [
+            -0.66007,
+            -0.23973
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_2|atk_m2|object_fabrication": {
+      "num_sequences": 5,
+      "total_valid_targets": 290,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.3069,
+          "ci95": [
+            0.20155,
+            0.41259
+          ],
+          "succ": 89,
+          "total_targets": 290
+        },
+        "no_defense": {
+          "asr": 0.94138,
+          "ci95": [
+            0.91667,
+            0.96552
+          ],
+          "succ": 273,
+          "total_targets": 290
+        },
+        "whole_cav_drop": {
+          "asr": 0.54828,
+          "ci95": [
+            0.30195,
+            0.77941
+          ],
+          "succ": 159,
+          "total_targets": 290
+        },
+        "hetshield_paper": {
+          "asr": 0.22414,
+          "ci95": [
+            0.13768,
+            0.3
+          ],
+          "succ": 65,
+          "total_targets": 290
+        },
+        "hetshield_tuned": {
+          "asr": 0.93793,
+          "ci95": [
+            0.91234,
+            0.96181
+          ],
+          "succ": 272,
+          "total_targets": 290
+        },
+        "lucia": {
+          "asr": 0.22759,
+          "ci95": [
+            0.0,
+            0.64286
+          ],
+          "succ": 66,
+          "total_targets": 290
+        },
+        "robosac": {
+          "asr": 0.93448,
+          "ci95": [
+            0.91096,
+            0.96078
+          ],
+          "succ": 271,
+          "total_targets": 290
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.63448,
+          "diff_ci95": [
+            -0.73188,
+            -0.55229
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.24138,
+          "diff_ci95": [
+            -0.4352,
+            -0.05195
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.08276,
+          "diff_ci95": [
+            -0.02397,
+            0.21569
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.63103,
+          "diff_ci95": [
+            -0.72826,
+            -0.54902
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": 0.07931,
+          "diff_ci95": [
+            -0.23457,
+            0.30208
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_robosac": {
+          "diff": -0.62759,
+          "diff_ci95": [
+            -0.72464,
+            -0.54706
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_2|atk_m2|object_removal": {
+      "num_sequences": 5,
+      "total_valid_targets": 289,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.02422,
+          "ci95": [
+            0.0,
+            0.07011
+          ],
+          "succ": 7,
+          "total_targets": 289
+        },
+        "no_defense": {
+          "asr": 0.60554,
+          "ci95": [
+            0.44444,
+            0.78676
+          ],
+          "succ": 175,
+          "total_targets": 289
+        },
+        "whole_cav_drop": {
+          "asr": 0.14533,
+          "ci95": [
+            0.03571,
+            0.27165
+          ],
+          "succ": 42,
+          "total_targets": 289
+        },
+        "hetshield_paper": {
+          "asr": 0.00692,
+          "ci95": [
+            0.0,
+            0.02214
+          ],
+          "succ": 2,
+          "total_targets": 289
+        },
+        "hetshield_tuned": {
+          "asr": 0.59516,
+          "ci95": [
+            0.42345,
+            0.79259
+          ],
+          "succ": 172,
+          "total_targets": 289
+        },
+        "lucia": {
+          "asr": 0.13841,
+          "ci95": [
+            0.0,
+            0.39216
+          ],
+          "succ": 40,
+          "total_targets": 289
+        },
+        "robosac": {
+          "asr": 0.5917,
+          "ci95": [
+            0.43824,
+            0.77407
+          ],
+          "succ": 171,
+          "total_targets": 289
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.58131,
+          "diff_ci95": [
+            -0.77941,
+            -0.41522
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.12111,
+          "diff_ci95": [
+            -0.23715,
+            -0.03571
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.0173,
+          "diff_ci95": [
+            0.0,
+            0.04797
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.57093,
+          "diff_ci95": [
+            -0.77206,
+            -0.39216
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.11419,
+          "diff_ci95": [
+            -0.37134,
+            0.07011
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_robosac": {
+          "diff": -0.56747,
+          "diff_ci95": [
+            -0.75,
+            -0.40741
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_ge3|atk_m1|object_fabrication": {
+      "num_sequences": 3,
+      "total_valid_targets": 268,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.27612,
+          "ci95": [
+            0.175,
+            0.42391
+          ],
+          "succ": 74,
+          "total_targets": 268
+        },
+        "no_defense": {
+          "asr": 0.98881,
+          "ci95": [
+            0.9875,
+            0.98958
+          ],
+          "succ": 265,
+          "total_targets": 268
+        },
+        "whole_cav_drop": {
+          "asr": 0.60821,
+          "ci95": [
+            0.1413,
+            0.8625
+          ],
+          "succ": 163,
+          "total_targets": 268
+        },
+        "hetshield_paper": {
+          "asr": 0.6791,
+          "ci95": [
+            0.55,
+            0.76087
+          ],
+          "succ": 182,
+          "total_targets": 268
+        },
+        "hetshield_tuned": {
+          "asr": 0.98881,
+          "ci95": [
+            0.9875,
+            0.98958
+          ],
+          "succ": 265,
+          "total_targets": 268
+        },
+        "lucia": {
+          "asr": 0.82463,
+          "ci95": [
+            0.55208,
+            0.9875
+          ],
+          "succ": 221,
+          "total_targets": 268
+        },
+        "robosac": {
+          "asr": 0.98881,
+          "ci95": [
+            0.9875,
+            0.98958
+          ],
+          "succ": 265,
+          "total_targets": 268
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.71269,
+          "diff_ci95": [
+            -0.8125,
+            -0.56522
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.33209,
+          "diff_ci95": [
+            -0.6875,
+            0.28261
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.40299,
+          "diff_ci95": [
+            -0.48958,
+            -0.33696
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.71269,
+          "diff_ci95": [
+            -0.8125,
+            -0.56522
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.54851,
+          "diff_ci95": [
+            -0.8125,
+            -0.33333
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.71269,
+          "diff_ci95": [
+            -0.8125,
+            -0.56522
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_ge3|atk_m1|object_removal": {
+      "num_sequences": 3,
+      "total_valid_targets": 268,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.01866,
+          "ci95": [
+            0.0,
+            0.0375
+          ],
+          "succ": 5,
+          "total_targets": 268
+        },
+        "no_defense": {
+          "asr": 0.52612,
+          "ci95": [
+            0.15217,
+            0.9125
+          ],
+          "succ": 141,
+          "total_targets": 268
+        },
+        "whole_cav_drop": {
+          "asr": 0.08209,
+          "ci95": [
+            0.01087,
+            0.1625
+          ],
+          "succ": 22,
+          "total_targets": 268
+        },
+        "hetshield_paper": {
+          "asr": 0.05224,
+          "ci95": [
+            0.01087,
+            0.1
+          ],
+          "succ": 14,
+          "total_targets": 268
+        },
+        "hetshield_tuned": {
+          "asr": 0.50746,
+          "ci95": [
+            0.1413,
+            0.9
+          ],
+          "succ": 136,
+          "total_targets": 268
+        },
+        "lucia": {
+          "asr": 0.39925,
+          "ci95": [
+            0.1087,
+            0.9125
+          ],
+          "succ": 107,
+          "total_targets": 268
+        },
+        "robosac": {
+          "asr": 0.51866,
+          "ci95": [
+            0.15217,
+            0.8875
+          ],
+          "succ": 139,
+          "total_targets": 268
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.50746,
+          "diff_ci95": [
+            -0.875,
+            -0.15217
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.06343,
+          "diff_ci95": [
+            -0.125,
+            -0.01087
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.03358,
+          "diff_ci95": [
+            -0.0625,
+            -0.01087
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.48881,
+          "diff_ci95": [
+            -0.8625,
+            -0.1413
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.3806,
+          "diff_ci95": [
+            -0.875,
+            -0.1087
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.5,
+          "diff_ci95": [
+            -0.85,
+            -0.15217
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_ge3|atk_m2|object_fabrication": {
+      "num_sequences": 3,
+      "total_valid_targets": 262,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.35878,
+          "ci95": [
+            0.325,
+            0.40217
+          ],
+          "succ": 94,
+          "total_targets": 262
+        },
+        "no_defense": {
+          "asr": 0.92748,
+          "ci95": [
+            0.875,
+            1.0
+          ],
+          "succ": 243,
+          "total_targets": 262
+        },
+        "whole_cav_drop": {
+          "asr": 0.57252,
+          "ci95": [
+            0.32609,
+            0.85
+          ],
+          "succ": 150,
+          "total_targets": 262
+        },
+        "hetshield_paper": {
+          "asr": 0.26718,
+          "ci95": [
+            0.175,
+            0.34783
+          ],
+          "succ": 70,
+          "total_targets": 262
+        },
+        "hetshield_tuned": {
+          "asr": 0.91985,
+          "ci95": [
+            0.875,
+            1.0
+          ],
+          "succ": 241,
+          "total_targets": 262
+        },
+        "lucia": {
+          "asr": 0.74427,
+          "ci95": [
+            0.5375,
+            0.9
+          ],
+          "succ": 195,
+          "total_targets": 262
+        },
+        "robosac": {
+          "asr": 0.91985,
+          "ci95": [
+            0.85,
+            1.0
+          ],
+          "succ": 241,
+          "total_targets": 262
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.5687,
+          "diff_ci95": [
+            -0.59783,
+            -0.55
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.21374,
+          "diff_ci95": [
+            -0.525,
+            0.07609
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.0916,
+          "diff_ci95": [
+            0.05435,
+            0.15
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.56107,
+          "diff_ci95": [
+            -0.59783,
+            -0.53333
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.3855,
+          "diff_ci95": [
+            -0.55556,
+            -0.2125
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.56107,
+          "diff_ci95": [
+            -0.59783,
+            -0.525
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_ge3|atk_m2|object_removal": {
+      "num_sequences": 3,
+      "total_valid_targets": 236,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.13559,
+          "ci95": [
+            0.04348,
+            0.37037
+          ],
+          "succ": 32,
+          "total_targets": 236
+        },
+        "no_defense": {
+          "asr": 0.78814,
+          "ci95": [
+            0.71739,
+            0.94444
+          ],
+          "succ": 186,
+          "total_targets": 236
+        },
+        "whole_cav_drop": {
+          "asr": 0.2839,
+          "ci95": [
+            0.08696,
+            0.55556
+          ],
+          "succ": 67,
+          "total_targets": 236
+        },
+        "hetshield_paper": {
+          "asr": 0.07627,
+          "ci95": [
+            0.03261,
+            0.22222
+          ],
+          "succ": 18,
+          "total_targets": 236
+        },
+        "hetshield_tuned": {
+          "asr": 0.78814,
+          "ci95": [
+            0.70652,
+            0.94444
+          ],
+          "succ": 186,
+          "total_targets": 236
+        },
+        "lucia": {
+          "asr": 0.51695,
+          "ci95": [
+            0.3913,
+            0.64444
+          ],
+          "succ": 122,
+          "total_targets": 236
+        },
+        "robosac": {
+          "asr": 0.77966,
+          "ci95": [
+            0.71739,
+            0.90741
+          ],
+          "succ": 184,
+          "total_targets": 236
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.65254,
+          "diff_ci95": [
+            -0.67778,
+            -0.57407
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.14831,
+          "diff_ci95": [
+            -0.23333,
+            -0.04348
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.05932,
+          "diff_ci95": [
+            0.01087,
+            0.14815
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.65254,
+          "diff_ci95": [
+            -0.68889,
+            -0.57407
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.38136,
+          "diff_ci95": [
+            -0.55556,
+            -0.14815
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.64407,
+          "diff_ci95": [
+            -0.67778,
+            -0.53704
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_ge3|two_attackers|object_fabrication": {
+      "num_sequences": 3,
+      "total_valid_targets": 528,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.2803,
+          "ci95": [
+            0.2375,
+            0.34239
+          ],
+          "succ": 148,
+          "total_targets": 528
+        },
+        "no_defense": {
+          "asr": 0.94508,
+          "ci95": [
+            0.9125,
+            0.96739
+          ],
+          "succ": 499,
+          "total_targets": 528
+        },
+        "whole_cav_drop": {
+          "asr": 0.56818,
+          "ci95": [
+            0.27174,
+            0.8125
+          ],
+          "succ": 300,
+          "total_targets": 528
+        },
+        "hetshield_paper": {
+          "asr": 0.4053,
+          "ci95": [
+            0.2875,
+            0.49457
+          ],
+          "succ": 214,
+          "total_targets": 528
+        },
+        "hetshield_tuned": {
+          "asr": 0.94508,
+          "ci95": [
+            0.9125,
+            0.96739
+          ],
+          "succ": 499,
+          "total_targets": 528
+        },
+        "lucia": {
+          "asr": 0.77841,
+          "ci95": [
+            0.7337,
+            0.85326
+          ],
+          "succ": 411,
+          "total_targets": 528
+        },
+        "robosac": {
+          "asr": 0.9375,
+          "ci95": [
+            0.8875,
+            0.96739
+          ],
+          "succ": 495,
+          "total_targets": 528
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.66477,
+          "diff_ci95": [
+            -0.69565,
+            -0.625
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.28788,
+          "diff_ci95": [
+            -0.575,
+            0.07065
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.125,
+          "diff_ci95": [
+            -0.23913,
+            -0.05
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.66477,
+          "diff_ci95": [
+            -0.69565,
+            -0.625
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.49811,
+          "diff_ci95": [
+            -0.51087,
+            -0.47826
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.6572,
+          "diff_ci95": [
+            -0.69565,
+            -0.625
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "collab_ge3|two_attackers|object_removal": {
+      "num_sequences": 3,
+      "total_valid_targets": 494,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.08907,
+          "ci95": [
+            0.03804,
+            0.16154
+          ],
+          "succ": 44,
+          "total_targets": 494
+        },
+        "no_defense": {
+          "asr": 0.68623,
+          "ci95": [
+            0.57065,
+            0.88462
+          ],
+          "succ": 339,
+          "total_targets": 494
+        },
+        "whole_cav_drop": {
+          "asr": 0.18623,
+          "ci95": [
+            0.11957,
+            0.29231
+          ],
+          "succ": 92,
+          "total_targets": 494
+        },
+        "hetshield_paper": {
+          "asr": 0.06073,
+          "ci95": [
+            0.01087,
+            0.12308
+          ],
+          "succ": 30,
+          "total_targets": 494
+        },
+        "hetshield_tuned": {
+          "asr": 0.68016,
+          "ci95": [
+            0.56522,
+            0.88462
+          ],
+          "succ": 336,
+          "total_targets": 494
+        },
+        "lucia": {
+          "asr": 0.49595,
+          "ci95": [
+            0.36957,
+            0.71538
+          ],
+          "succ": 245,
+          "total_targets": 494
+        },
+        "robosac": {
+          "asr": 0.66802,
+          "ci95": [
+            0.55978,
+            0.83077
+          ],
+          "succ": 330,
+          "total_targets": 494
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.59717,
+          "diff_ci95": [
+            -0.72308,
+            -0.53261
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.09717,
+          "diff_ci95": [
+            -0.13077,
+            -0.08152
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.02834,
+          "diff_ci95": [
+            0.02222,
+            0.03846
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.59109,
+          "diff_ci95": [
+            -0.72308,
+            -0.52717
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.40688,
+          "diff_ci95": [
+            -0.55385,
+            -0.33152
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.57895,
+          "diff_ci95": [
+            -0.66923,
+            -0.52174
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "ge2_all|atk_m1|object_fabrication": {
+      "num_sequences": 7,
+      "total_valid_targets": 558,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.31004,
+          "ci95": [
+            0.21667,
+            0.44057
+          ],
+          "succ": 173,
+          "total_targets": 558
+        },
+        "no_defense": {
+          "asr": 0.98925,
+          "ci95": [
+            0.98326,
+            0.99543
+          ],
+          "succ": 552,
+          "total_targets": 558
+        },
+        "whole_cav_drop": {
+          "asr": 0.49821,
+          "ci95": [
+            0.20082,
+            0.71974
+          ],
+          "succ": 278,
+          "total_targets": 558
+        },
+        "hetshield_paper": {
+          "asr": 0.69176,
+          "ci95": [
+            0.61297,
+            0.75117
+          ],
+          "succ": 386,
+          "total_targets": 558
+        },
+        "hetshield_tuned": {
+          "asr": 0.98925,
+          "ci95": [
+            0.98326,
+            0.99543
+          ],
+          "succ": 552,
+          "total_targets": 558
+        },
+        "lucia": {
+          "asr": 0.7957,
+          "ci95": [
+            0.55149,
+            0.99558
+          ],
+          "succ": 444,
+          "total_targets": 558
+        },
+        "robosac": {
+          "asr": 0.98566,
+          "ci95": [
+            0.97674,
+            0.99259
+          ],
+          "succ": 550,
+          "total_targets": 558
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.67921,
+          "diff_ci95": [
+            -0.77165,
+            -0.54425
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.18817,
+          "diff_ci95": [
+            -0.4898,
+            0.22152
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.38172,
+          "diff_ci95": [
+            -0.46753,
+            -0.27292
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.67921,
+          "diff_ci95": [
+            -0.77165,
+            -0.54425
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.48566,
+          "diff_ci95": [
+            -0.71021,
+            -0.30485
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.67563,
+          "diff_ci95": [
+            -0.77057,
+            -0.5372
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "ge2_all|atk_m1|object_removal": {
+      "num_sequences": 7,
+      "total_valid_targets": 557,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.01436,
+          "ci95": [
+            0.00402,
+            0.02564
+          ],
+          "succ": 8,
+          "total_targets": 557
+        },
+        "no_defense": {
+          "asr": 0.49013,
+          "ci95": [
+            0.25296,
+            0.68309
+          ],
+          "succ": 273,
+          "total_targets": 557
+        },
+        "whole_cav_drop": {
+          "asr": 0.09156,
+          "ci95": [
+            0.01826,
+            0.14665
+          ],
+          "succ": 51,
+          "total_targets": 557
+        },
+        "hetshield_paper": {
+          "asr": 0.08797,
+          "ci95": [
+            0.03439,
+            0.15493
+          ],
+          "succ": 49,
+          "total_targets": 557
+        },
+        "hetshield_tuned": {
+          "asr": 0.48115,
+          "ci95": [
+            0.24698,
+            0.67366
+          ],
+          "succ": 268,
+          "total_targets": 557
+        },
+        "lucia": {
+          "asr": 0.35368,
+          "ci95": [
+            0.18766,
+            0.63159
+          ],
+          "succ": 197,
+          "total_targets": 557
+        },
+        "robosac": {
+          "asr": 0.48654,
+          "ci95": [
+            0.25296,
+            0.67776
+          ],
+          "succ": 271,
+          "total_targets": 557
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.47576,
+          "diff_ci95": [
+            -0.66048,
+            -0.24987
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.0772,
+          "diff_ci95": [
+            -0.12761,
+            -0.01357
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.07361,
+          "diff_ci95": [
+            -0.14286,
+            -0.02579
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.46679,
+          "diff_ci95": [
+            -0.64896,
+            -0.24472
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.33932,
+          "diff_ci95": [
+            -0.61236,
+            -0.17368
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.47217,
+          "diff_ci95": [
+            -0.65298,
+            -0.24987
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "ge2_all|atk_m2|object_fabrication": {
+      "num_sequences": 7,
+      "total_valid_targets": 552,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.33152,
+          "ci95": [
+            0.25266,
+            0.3791
+          ],
+          "succ": 183,
+          "total_targets": 552
+        },
+        "no_defense": {
+          "asr": 0.93478,
+          "ci95": [
+            0.90625,
+            0.96725
+          ],
+          "succ": 516,
+          "total_targets": 552
+        },
+        "whole_cav_drop": {
+          "asr": 0.55978,
+          "ci95": [
+            0.36109,
+            0.72729
+          ],
+          "succ": 309,
+          "total_targets": 552
+        },
+        "hetshield_paper": {
+          "asr": 0.24457,
+          "ci95": [
+            0.18525,
+            0.30418
+          ],
+          "succ": 135,
+          "total_targets": 552
+        },
+        "hetshield_tuned": {
+          "asr": 0.92935,
+          "ci95": [
+            0.90265,
+            0.96272
+          ],
+          "succ": 513,
+          "total_targets": 552
+        },
+        "lucia": {
+          "asr": 0.47283,
+          "ci95": [
+            0.09773,
+            0.73315
+          ],
+          "succ": 261,
+          "total_targets": 552
+        },
+        "robosac": {
+          "asr": 0.92754,
+          "ci95": [
+            0.8922,
+            0.96102
+          ],
+          "succ": 512,
+          "total_targets": 552
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.60326,
+          "diff_ci95": [
+            -0.67594,
+            -0.5583
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.22826,
+          "diff_ci95": [
+            -0.40519,
+            -0.04983
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.08696,
+          "diff_ci95": [
+            0.00529,
+            0.14223
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.59783,
+          "diff_ci95": [
+            -0.67225,
+            -0.54947
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.1413,
+          "diff_ci95": [
+            -0.36318,
+            0.19691
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_robosac": {
+          "diff": -0.59601,
+          "diff_ci95": [
+            -0.66746,
+            -0.55248
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "ge2_all|atk_m2|object_removal": {
+      "num_sequences": 7,
+      "total_valid_targets": 525,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.07429,
+          "ci95": [
+            0.02133,
+            0.16471
+          ],
+          "succ": 39,
+          "total_targets": 525
+        },
+        "no_defense": {
+          "asr": 0.68762,
+          "ci95": [
+            0.54905,
+            0.8133
+          ],
+          "succ": 361,
+          "total_targets": 525
+        },
+        "whole_cav_drop": {
+          "asr": 0.20762,
+          "ci95": [
+            0.09664,
+            0.33544
+          ],
+          "succ": 109,
+          "total_targets": 525
+        },
+        "hetshield_paper": {
+          "asr": 0.0381,
+          "ci95": [
+            0.00968,
+            0.09376
+          ],
+          "succ": 20,
+          "total_targets": 525
+        },
+        "hetshield_tuned": {
+          "asr": 0.6819,
+          "ci95": [
+            0.53223,
+            0.80835
+          ],
+          "succ": 358,
+          "total_targets": 525
+        },
+        "lucia": {
+          "asr": 0.30857,
+          "ci95": [
+            0.0678,
+            0.49449
+          ],
+          "succ": 162,
+          "total_targets": 525
+        },
+        "robosac": {
+          "asr": 0.67619,
+          "ci95": [
+            0.53995,
+            0.78795
+          ],
+          "succ": 355,
+          "total_targets": 525
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.61333,
+          "diff_ci95": [
+            -0.72139,
+            -0.48023
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.13333,
+          "diff_ci95": [
+            -0.2028,
+            -0.06418
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": 0.03619,
+          "diff_ci95": [
+            0.01101,
+            0.07349
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.60762,
+          "diff_ci95": [
+            -0.71541,
+            -0.46644
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.23429,
+          "diff_ci95": [
+            -0.41693,
+            0.01781
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_robosac": {
+          "diff": -0.6019,
+          "diff_ci95": [
+            -0.70139,
+            -0.46719
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "ge2_all|single_attacker|object_fabrication": {
+      "num_sequences": 7,
+      "total_valid_targets": 1110,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.32072,
+          "ci95": [
+            0.26358,
+            0.38236
+          ],
+          "succ": 356,
+          "total_targets": 1110
+        },
+        "no_defense": {
+          "asr": 0.96216,
+          "ci95": [
+            0.94677,
+            0.97935
+          ],
+          "succ": 1068,
+          "total_targets": 1110
+        },
+        "whole_cav_drop": {
+          "asr": 0.52883,
+          "ci95": [
+            0.29306,
+            0.70726
+          ],
+          "succ": 587,
+          "total_targets": 1110
+        },
+        "hetshield_paper": {
+          "asr": 0.46937,
+          "ci95": [
+            0.40315,
+            0.52226
+          ],
+          "succ": 521,
+          "total_targets": 1110
+        },
+        "hetshield_tuned": {
+          "asr": 0.95946,
+          "ci95": [
+            0.94474,
+            0.97716
+          ],
+          "succ": 1065,
+          "total_targets": 1110
+        },
+        "lucia": {
+          "asr": 0.63514,
+          "ci95": [
+            0.53807,
+            0.73289
+          ],
+          "succ": 705,
+          "total_targets": 1110
+        },
+        "robosac": {
+          "asr": 0.95676,
+          "ci95": [
+            0.93845,
+            0.97409
+          ],
+          "succ": 1062,
+          "total_targets": 1110
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.64144,
+          "diff_ci95": [
+            -0.69593,
+            -0.58556
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.20811,
+          "diff_ci95": [
+            -0.41858,
+            0.08017
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.14865,
+          "diff_ci95": [
+            -0.1714,
+            -0.12234
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.63874,
+          "diff_ci95": [
+            -0.69267,
+            -0.58461
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.31441,
+          "diff_ci95": [
+            -0.40746,
+            -0.18859
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.63604,
+          "diff_ci95": [
+            -0.69037,
+            -0.58019
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    },
+    "ge2_all|single_attacker|object_removal": {
+      "num_sequences": 7,
+      "total_valid_targets": 1082,
+      "methods": {
+        "bud_frozen": {
+          "asr": 0.04344,
+          "ci95": [
+            0.01264,
+            0.08766
+          ],
+          "succ": 47,
+          "total_targets": 1082
+        },
+        "no_defense": {
+          "asr": 0.58595,
+          "ci95": [
+            0.42748,
+            0.72924
+          ],
+          "succ": 634,
+          "total_targets": 1082
+        },
+        "whole_cav_drop": {
+          "asr": 0.14787,
+          "ci95": [
+            0.0625,
+            0.22176
+          ],
+          "succ": 160,
+          "total_targets": 1082
+        },
+        "hetshield_paper": {
+          "asr": 0.06377,
+          "ci95": [
+            0.02869,
+            0.10801
+          ],
+          "succ": 69,
+          "total_targets": 1082
+        },
+        "hetshield_tuned": {
+          "asr": 0.57856,
+          "ci95": [
+            0.41383,
+            0.72389
+          ],
+          "succ": 626,
+          "total_targets": 1082
+        },
+        "lucia": {
+          "asr": 0.33179,
+          "ci95": [
+            0.19496,
+            0.4744
+          ],
+          "succ": 359,
+          "total_targets": 1082
+        },
+        "robosac": {
+          "asr": 0.57856,
+          "ci95": [
+            0.41951,
+            0.71641
+          ],
+          "succ": 626,
+          "total_targets": 1082
+        }
+      },
+      "paired_asr_diff_vs_bud": {
+        "bud_minus_no_defense": {
+          "diff": -0.54251,
+          "diff_ci95": [
+            -0.6611,
+            -0.39894
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_whole_cav_drop": {
+          "diff": -0.10444,
+          "diff_ci95": [
+            -0.15028,
+            -0.03883
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_hetshield_paper": {
+          "diff": -0.02033,
+          "diff_ci95": [
+            -0.05534,
+            0.00567
+          ],
+          "significant_lower_asr": false
+        },
+        "bud_minus_hetshield_tuned": {
+          "diff": -0.53512,
+          "diff_ci95": [
+            -0.65792,
+            -0.3898
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_lucia": {
+          "diff": -0.28835,
+          "diff_ci95": [
+            -0.39168,
+            -0.17206
+          ],
+          "significant_lower_asr": true
+        },
+        "bud_minus_robosac": {
+          "diff": -0.53512,
+          "diff_ci95": [
+            -0.6521,
+            -0.39399
+          ],
+          "significant_lower_asr": true
+        }
+      }
+    }
+  }
+}

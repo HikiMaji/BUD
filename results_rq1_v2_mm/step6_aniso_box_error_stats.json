@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "description": "m1(LiDAR) vs m2(Camera-LSS) 检测框中心误差径向/横向分档统计与曲线拟合（研究内容二各向异性实测证据）",
+    "num_frames": 320,
+    "max_match_dist_m": 4.0,
+    "elapsed_sec": 951.99,
+    "git_commit": "f4124743c627379d7df3f3492b066b5d23f4f9e6",
+    "git_short": "f412474",
+    "git_branch": "master",
+    "git_dirty_at_write": false
+  },
+  "results": {
+    "m1": {
+      "total_matched_boxes": 3407,
+      "bins": [
+        {
+          "range_m": [
+            0.0,
+            15.0
+          ],
+          "mean_dist_m": 9.628,
+          "count": 526,
+          "radial_std_m": 0.171,
+          "radial_abs_mean_m": 0.103,
+          "radial_bias_m": 0.0125,
+          "tangential_std_m": 0.1131,
+          "tangential_abs_mean_m": 0.083,
+          "anisotropy_ratio_sr_over_st": 1.511
+        },
+        {
+          "range_m": [
+            15.0,
+            25.0
+          ],
+          "mean_dist_m": 19.78,
+          "count": 585,
+          "radial_std_m": 0.2146,
+          "radial_abs_mean_m": 0.1192,
+          "radial_bias_m": 0.0186,
+          "tangential_std_m": 0.1445,
+          "tangential_abs_mean_m": 0.0934,
+          "anisotropy_ratio_sr_over_st": 1.485
+        },
+        {
+          "range_m": [
+            25.0,
+            35.0
+          ],
+          "mean_dist_m": 30.333,
+          "count": 546,
+          "radial_std_m": 0.6173,
+          "radial_abs_mean_m": 0.2491,
+          "radial_bias_m": 0.0994,
+          "tangential_std_m": 0.4347,
+          "tangential_abs_mean_m": 0.186,
+          "anisotropy_ratio_sr_over_st": 1.42
+        },
+        {
+          "range_m": [
+            35.0,
+            45.0
+          ],
+          "mean_dist_m": 39.495,
+          "count": 443,
+          "radial_std_m": 0.325,
+          "radial_abs_mean_m": 0.1757,
+          "radial_bias_m": -0.0252,
+          "tangential_std_m": 0.2929,
+          "tangential_abs_mean_m": 0.1294,
+          "anisotropy_ratio_sr_over_st": 1.11
+        },
+        {
+          "range_m": [
+            45.0,
+            60.0
+          ],
+          "mean_dist_m": 52.65,
+          "count": 550,
+          "radial_std_m": 0.3119,
+          "radial_abs_mean_m": 0.2112,
+          "radial_bias_m": -0.0415,
+          "tangential_std_m": 0.2388,
+          "tangential_abs_mean_m": 0.1387,
+          "anisotropy_ratio_sr_over_st": 1.306
+        }
+      ],
+      "radial_fit_quad_a_plus_bd2": {
+        "a": 0.288007,
+        "b": 3.482e-05,
+        "r2": 0.0454
+      },
+      "radial_fit_lin_a_plus_bd": {
+        "a": 0.217983,
+        "b": 0.00362008,
+        "r2": 0.1211
+      },
+      "tangential_fit_lin_a_plus_bd": {
+        "a": 0.134046,
+        "b": 0.0036466,
+        "r2": 0.2267
+      },
+      "tangential_fit_quad_a_plus_bd2": {
+        "a": 0.198973,
+        "b": 3.996e-05,
+        "r2": 0.1103
+      }
+    },
+    "m2": {
+      "total_matched_boxes": 2096,
+      "bins": [
+        {
+          "range_m": [
+            0.0,
+            15.0
+          ],
+          "mean_dist_m": 9.464,
+          "count": 565,
+          "radial_std_m": 0.3952,
+          "radial_abs_mean_m": 0.273,
+          "radial_bias_m": 0.1496,
+          "tangential_std_m": 0.3254,
+          "tangential_abs_mean_m": 0.1687,
+          "anisotropy_ratio_sr_over_st": 1.215
+        },
+        {
+          "range_m": [
+            15.0,
+            25.0
+          ],
+          "mean_dist_m": 20.254,
+          "count": 695,
+          "radial_std_m": 0.8704,
+          "radial_abs_mean_m": 0.6977,
+          "radial_bias_m": 0.3302,
+          "tangential_std_m": 0.4334,
+          "tangential_abs_mean_m": 0.2194,
+          "anisotropy_ratio_sr_over_st": 2.008
+        },
+        {
+          "range_m": [
+            25.0,
+            35.0
+          ],
+          "mean_dist_m": 29.758,
+          "count": 564,
+          "radial_std_m": 1.3991,
+          "radial_abs_mean_m": 1.0823,
+          "radial_bias_m": 0.1141,
+          "tangential_std_m": 0.7372,
+          "tangential_abs_mean_m": 0.3916,
+          "anisotropy_ratio_sr_over_st": 1.898
+        },
+        {
+          "range_m": [
+            35.0,
+            45.0
+          ],
+          "mean_dist_m": 38.54,
+          "count": 201,
+          "radial_std_m": 1.5469,
+          "radial_abs_mean_m": 1.3155,
+          "radial_bias_m": -0.59,
+          "tangential_std_m": 0.8671,
+          "tangential_abs_mean_m": 0.49,
+          "anisotropy_ratio_sr_over_st": 1.784
+        },
+        {
+          "range_m": [
+            45.0,
+            60.0
+          ],
+          "mean_dist_m": 52.056,
+          "count": 63,
+          "radial_std_m": 2.2379,
+          "radial_abs_mean_m": 1.9505,
+          "radial_bias_m": -0.3599,
+          "tangential_std_m": 1.3542,
+          "tangential_abs_mean_m": 1.0577,
+          "anisotropy_ratio_sr_over_st": 1.653
+        }
+      ],
+      "radial_fit_quad_a_plus_bd2": {
+        "a": 0.561264,
+        "b": 0.00065282,
+        "r2": 0.9343
+      },
+      "radial_fit_lin_a_plus_bd": {
+        "a": 0.019826,
+        "b": 0.0423148,
+        "r2": 0.9866
+      },
+      "tangential_fit_lin_a_plus_bd": {
+        "a": 0.014617,
+        "b": 0.02428367,
+        "r2": 0.9628
+      },
+      "tangential_fit_quad_a_plus_bd2": {
+        "a": 0.308572,
+        "b": 0.00038967,
+        "r2": 0.9863
+      }
+    }
+  }
+}

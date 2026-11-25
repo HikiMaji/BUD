@@ -1,0 +1,530 @@
+[Wed Nov 18 06:49:27 HKT 2026] Starting Step 3 (150 Unseen Test Frames)...
+[Step 3] Evaluating on 150 unseen OPV2V test frames across all 16 sequences (total=2170)...
+  Evaluated 20/150 test frames (185.5s)
+  Evaluated 40/150 test frames (472.9s)
+  Evaluated 60/150 test frames (650.5s)
+  Evaluated 80/150 test frames (806.0s)
+  Evaluated 100/150 test frames (1023.5s)
+  Evaluated 120/150 test frames (1313.5s)
+  Evaluated 140/150 test frames (1484.1s)
+  Evaluated 150/150 test frames (1564.8s)
+
+================ FINAL BENCHMARK SUMMARY ================
+{
+  "num_test_frames": 150,
+  "main_benchmark_ap": {
+    "clean": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.8437,
+        "AP70": 0.7979
+      },
+      "unconstrained_att": {
+        "AP50": 0.4996,
+        "AP70": 0.4321
+      },
+      "hetero_where2comm": {
+        "AP50": 0.8582,
+        "AP70": 0.7322
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.7111,
+        "AP70": 0.6195
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.6994,
+        "AP70": 0.6217
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.5899,
+        "AP70": 0.5264
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.6177,
+        "AP70": 0.5552
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.6429,
+        "AP70": 0.5766
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.7837,
+        "AP70": 0.6896
+      }
+    },
+    "pgd_removal": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.8437,
+        "AP70": 0.7979
+      },
+      "unconstrained_att": {
+        "AP50": 0.0508,
+        "AP70": 0.0397
+      },
+      "hetero_where2comm": {
+        "AP50": 0.0002,
+        "AP70": 0.0001
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.7537,
+        "AP70": 0.6534
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.7357,
+        "AP70": 0.645
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.6742,
+        "AP70": 0.5936
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.6615,
+        "AP70": 0.5835
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.7033,
+        "AP70": 0.619
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.7865,
+        "AP70": 0.6803
+      }
+    },
+    "ghost_spoof": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.8437,
+        "AP70": 0.7979
+      },
+      "unconstrained_att": {
+        "AP50": 0.1917,
+        "AP70": 0.1579
+      },
+      "hetero_where2comm": {
+        "AP50": 0.4014,
+        "AP70": 0.3206
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.7537,
+        "AP70": 0.6534
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.7395,
+        "AP70": 0.6485
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.6742,
+        "AP70": 0.5936
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.6914,
+        "AP70": 0.6088
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.6638,
+        "AP70": 0.5755
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.7865,
+        "AP70": 0.6803
+      }
+    },
+    "hetpoison_transfer": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.8437,
+        "AP70": 0.7979
+      },
+      "unconstrained_att": {
+        "AP50": 0.2277,
+        "AP70": 0.1822
+      },
+      "hetero_where2comm": {
+        "AP50": 0.858,
+        "AP70": 0.7383
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.6993,
+        "AP70": 0.6088
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.6989,
+        "AP70": 0.6206
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.5738,
+        "AP70": 0.5111
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.6125,
+        "AP70": 0.5503
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.6434,
+        "AP70": 0.5776
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.7864,
+        "AP70": 0.6886
+      }
+    },
+    "whitebox_adaptive": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.8437,
+        "AP70": 0.7979
+      },
+      "unconstrained_att": {
+        "AP50": 0.0495,
+        "AP70": 0.0395
+      },
+      "hetero_where2comm": {
+        "AP50": 0.0114,
+        "AP70": 0.0073
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.7423,
+        "AP70": 0.643
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.738,
+        "AP70": 0.6472
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.0982,
+        "AP70": 0.0803
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.679,
+        "AP70": 0.5989
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.5733,
+        "AP70": 0.4848
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.4074,
+        "AP70": 0.3487
+      }
+    }
+  },
+  "quarantine_and_suppression": {
+    "homo_def_global_res_homo_th": {
+      "BFQR_benign_false_quarantine_rate": 0.5311,
+      "MSR_malicious_suppression_rate": 0.8803,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "homo_def_robosac_homo_th": {
+      "BFQR_benign_false_quarantine_rate": 0.4191,
+      "MSR_malicious_suppression_rate": 0.8592,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "hetero_def_global_res": {
+      "BFQR_benign_false_quarantine_rate": 0.0373,
+      "MSR_malicious_suppression_rate": 0.6144,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "hetero_def_robosac_full": {
+      "BFQR_benign_false_quarantine_rate": 0.0871,
+      "MSR_malicious_suppression_rate": 0.7342,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "hetero_def_robosac_vis": {
+      "BFQR_benign_false_quarantine_rate": 0.1743,
+      "MSR_malicious_suppression_rate": 0.7377,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "ours_bud_fusion": {
+      "BFQR_benign_false_quarantine_rate": 0.1203,
+      "MSR_malicious_suppression_rate": 0.7324,
+      "benign_N": 241,
+      "atk_N": 568
+    }
+  },
+  "detector_hetero_auroc": {
+    "robosac_full": 0.9937,
+    "global_res": 1.0,
+    "ours_s_frame": 1.0
+  },
+  "ablation_study_ap": {
+    "clean": {
+      "ours_full": {
+        "AP50": 0.7782,
+        "AP70": 0.688
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.7725,
+        "AP70": 0.6758
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.785,
+        "AP70": 0.6945
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.776,
+        "AP70": 0.6981
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.7782,
+        "AP70": 0.6881
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.7776,
+        "AP70": 0.6885
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.7586,
+        "AP70": 0.6741
+      }
+    },
+    "pgd_removal": {
+      "ours_full": {
+        "AP50": 0.7811,
+        "AP70": 0.6781
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.7779,
+        "AP70": 0.6719
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.7823,
+        "AP70": 0.68
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.7828,
+        "AP70": 0.6845
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.7819,
+        "AP70": 0.6784
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.7823,
+        "AP70": 0.6764
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.7727,
+        "AP70": 0.6705
+      }
+    },
+    "ghost_spoof": {
+      "ours_full": {
+        "AP50": 0.7811,
+        "AP70": 0.6781
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.7779,
+        "AP70": 0.6719
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.7823,
+        "AP70": 0.68
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.7828,
+        "AP70": 0.6845
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.7708,
+        "AP70": 0.6687
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.7202,
+        "AP70": 0.6361
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.7727,
+        "AP70": 0.6705
+      }
+    },
+    "hetpoison_transfer": {
+      "ours_full": {
+        "AP50": 0.7811,
+        "AP70": 0.687
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.7613,
+        "AP70": 0.6642
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.79,
+        "AP70": 0.6982
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.7825,
+        "AP70": 0.6998
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.7815,
+        "AP70": 0.687
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.7819,
+        "AP70": 0.6878
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.7651,
+        "AP70": 0.6772
+      }
+    }
+  },
+  "objective_point_strata": {
+    "clean": {
+      "ego_only": {
+        "clear_recall": 0.9719,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6907,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0089,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8583,
+        "false_positives": 288
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.6005,
+        "clear_gt": 1457,
+        "sparse_recall": 0.3347,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0889,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.985,
+        "false_positives": 16
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.766,
+        "clear_gt": 1457,
+        "sparse_recall": 0.4894,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.1956,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.966,
+        "false_positives": 49
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9478,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6822,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.1422,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8884,
+        "false_positives": 218
+      }
+    },
+    "ghost_spoof": {
+      "ego_only": {
+        "clear_recall": 0.9719,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6907,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0089,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8583,
+        "false_positives": 288
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.6026,
+        "clear_gt": 1457,
+        "sparse_recall": 0.3411,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0933,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.3567,
+        "false_positives": 1912
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.884,
+        "clear_gt": 1457,
+        "sparse_recall": 0.5106,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.1511,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8821,
+        "false_positives": 209
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9616,
+        "clear_gt": 1457,
+        "sparse_recall": 0.678,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0933,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8727,
+        "false_positives": 254
+      }
+    },
+    "pgd_removal": {
+      "ego_only": {
+        "clear_recall": 0.9719,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6907,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0089,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8583,
+        "false_positives": 288
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.0062,
+        "clear_gt": 1457,
+        "sparse_recall": 0.0021,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0044,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.3548,
+        "false_positives": 20
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.8689,
+        "clear_gt": 1457,
+        "sparse_recall": 0.5169,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.1422,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.9256,
+        "false_positives": 124
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9616,
+        "clear_gt": 1457,
+        "sparse_recall": 0.678,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0933,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8727,
+        "false_positives": 254
+      }
+    }
+  },
+  "mean_fusion_head_latency_ms": {
+    "unconstrained_att": 2.47,
+    "hetero_def_robosac_vis": 6.67,
+    "ours_bud_fusion": 7.96
+  }
+}
+[Wed Nov 18 07:15:47 HKT 2026] Starting Step 4 (Quantitative Figures)...
+[Step 4 Complete] Generated 4 high-resolution figures in /root/autodl-tmp/proj_dir2_hetero_trust/outputs/figures
+[Wed Nov 18 07:15:51 HKT 2026] Starting Step 5 (Qualitative BEV Case Figure)...
+[Step 5 Complete] Saved qualitative BEV case study figure to /root/autodl-tmp/proj_dir2_hetero_trust/outputs/figures/fig5_qualitative_bev_case.png
+[Wed Nov 18 07:16:22 HKT 2026] ALL STEPS SUCCEEDED!

@@ -1,0 +1,569 @@
+[Wed Nov 18 07:50:56 HKT 2026] Re-calibrating frozen thresholds on 240 validate frames with multi-scale max scan statistic...
+Updated calibrated_thresholds.json: {
+  "alpha_budget": 0.05,
+  "hetero_calibrated_95": {
+    "global_residual": 0.12993,
+    "robosac_full": 0.14297,
+    "robosac_vis_calib": 0.09742,
+    "ours_full": 11.27775,
+    "ours_no_alea": 14.03836,
+    "ours_no_epis": 10.28246,
+    "ours_quant95": 4.9604
+  },
+  "homo_calibrated_95": {
+    "global_residual": 0.07939,
+    "robosac_full": 0.09273,
+    "robosac_vis_calib": 0.0977
+  },
+  "bud_calib_params": {
+    "tau_frame": 11.27775,
+    "tau_grid": 4.50162,
+    "tau_epis": 0.26879,
+    "dom_var": {
+      "profile_a_pp64": 0.005,
+      "profile_b_second64": 0.03905,
+      "profile_c_coarse32": 0.03268,
+      "profile_d_sparse16": 0.02893
+    },
+    "tau_a": 0.1,
+    "tau_e": 1.0,
+    "lambda_m": 2.2,
+    "kappa": 8.0,
+    "beta_d": 4.5,
+    "beta_e": 6.0,
+    "beta_att": 1.2,
+    "theta_clear": 0.52,
+    "theta_reach": 0.78,
+    "r_near": 14.0,
+    "act_thresh": 2.0
+  }
+}
+[Wed Nov 18 07:55:59 HKT 2026] Running FULL 150-Frame Unseen OPV2V Test Set Evaluation...
+[Step 3] Evaluating on 150 unseen OPV2V test frames across all 16 sequences (total=2170)...
+  Evaluated 20/150 test frames (121.1s)
+  Evaluated 40/150 test frames (318.4s)
+  Evaluated 60/150 test frames (462.5s)
+  Evaluated 80/150 test frames (571.8s)
+  Evaluated 100/150 test frames (741.8s)
+  Evaluated 120/150 test frames (997.4s)
+  Evaluated 140/150 test frames (1077.5s)
+  Evaluated 150/150 test frames (1117.1s)
+
+================ FINAL BENCHMARK SUMMARY ================
+{
+  "num_test_frames": 150,
+  "main_benchmark_ap": {
+    "clean": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.9262,
+        "AP70": 0.8425
+      },
+      "unconstrained_att": {
+        "AP50": 0.8373,
+        "AP70": 0.7003
+      },
+      "hetero_where2comm": {
+        "AP50": 0.8582,
+        "AP70": 0.7322
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.8432,
+        "AP70": 0.7255
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8409,
+        "AP70": 0.7158
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.8586,
+        "AP70": 0.7318
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.8585,
+        "AP70": 0.7332
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.8555,
+        "AP70": 0.7329
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.8536,
+        "AP70": 0.7255
+      }
+    },
+    "pgd_removal": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.9262,
+        "AP70": 0.8425
+      },
+      "unconstrained_att": {
+        "AP50": 0.6788,
+        "AP70": 0.4065
+      },
+      "hetero_where2comm": {
+        "AP50": 0.5509,
+        "AP70": 0.2667
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.647,
+        "AP70": 0.4273
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.5279,
+        "AP70": 0.256
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.5533,
+        "AP70": 0.272
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.5465,
+        "AP70": 0.2667
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.5363,
+        "AP70": 0.263
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.7914,
+        "AP70": 0.6015
+      }
+    },
+    "ghost_spoof": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.9262,
+        "AP70": 0.8425
+      },
+      "unconstrained_att": {
+        "AP50": 0.5813,
+        "AP70": 0.4673
+      },
+      "hetero_where2comm": {
+        "AP50": 0.568,
+        "AP70": 0.4608
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.671,
+        "AP70": 0.5565
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8124,
+        "AP70": 0.691
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.5762,
+        "AP70": 0.4677
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.8213,
+        "AP70": 0.706
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.7685,
+        "AP70": 0.6506
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.6868,
+        "AP70": 0.5697
+      }
+    },
+    "hetpoison_transfer": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.9262,
+        "AP70": 0.8425
+      },
+      "unconstrained_att": {
+        "AP50": 0.7626,
+        "AP70": 0.6436
+      },
+      "hetero_where2comm": {
+        "AP50": 0.8577,
+        "AP70": 0.7386
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.8414,
+        "AP70": 0.724
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8459,
+        "AP70": 0.722
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.8595,
+        "AP70": 0.7375
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.8581,
+        "AP70": 0.7392
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.8568,
+        "AP70": 0.7389
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.8523,
+        "AP70": 0.7276
+      }
+    },
+    "whitebox_adaptive": {
+      "ego_only": {
+        "AP50": 0.7886,
+        "AP70": 0.6711
+      },
+      "homo_64_oracle": {
+        "AP50": 0.9262,
+        "AP70": 0.8425
+      },
+      "unconstrained_att": {
+        "AP50": 0.6808,
+        "AP70": 0.3904
+      },
+      "hetero_where2comm": {
+        "AP50": 0.353,
+        "AP70": 0.2537
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.7698,
+        "AP70": 0.6518
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8124,
+        "AP70": 0.691
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.531,
+        "AP70": 0.4188
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.8213,
+        "AP70": 0.706
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.8192,
+        "AP70": 0.7017
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.6032,
+        "AP70": 0.5066
+      }
+    }
+  },
+  "quarantine_and_suppression": {
+    "homo_def_global_res_homo_th": {
+      "BFQR_benign_false_quarantine_rate": 0.5311,
+      "MSR_malicious_suppression_rate": 0.6373,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "homo_def_robosac_homo_th": {
+      "BFQR_benign_false_quarantine_rate": 0.1494,
+      "MSR_malicious_suppression_rate": 0.5211,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "hetero_def_global_res": {
+      "BFQR_benign_false_quarantine_rate": 0.0373,
+      "MSR_malicious_suppression_rate": 0.1602,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "hetero_def_robosac_full": {
+      "BFQR_benign_false_quarantine_rate": 0.0,
+      "MSR_malicious_suppression_rate": 0.4982,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "hetero_def_robosac_vis": {
+      "BFQR_benign_false_quarantine_rate": 0.0996,
+      "MSR_malicious_suppression_rate": 0.4824,
+      "benign_N": 241,
+      "atk_N": 568
+    },
+    "ours_bud_fusion": {
+      "BFQR_benign_false_quarantine_rate": 0.1037,
+      "MSR_malicious_suppression_rate": 0.2975,
+      "benign_N": 241,
+      "atk_N": 568
+    }
+  },
+  "detector_hetero_auroc": {
+    "robosac_full": 0.5838,
+    "global_res": 0.528,
+    "ours_s_frame": 0.5377
+  },
+  "ablation_study_ap": {
+    "clean": {
+      "ours_full": {
+        "AP50": 0.8525,
+        "AP70": 0.7259
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.8108,
+        "AP70": 0.6811
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.854,
+        "AP70": 0.7132
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.8602,
+        "AP70": 0.7342
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.8511,
+        "AP70": 0.7242
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.8613,
+        "AP70": 0.7342
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.8516,
+        "AP70": 0.7216
+      }
+    },
+    "pgd_removal": {
+      "ours_full": {
+        "AP50": 0.7865,
+        "AP70": 0.5948
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.7764,
+        "AP70": 0.6271
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.7569,
+        "AP70": 0.5355
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.8128,
+        "AP70": 0.6021
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.6763,
+        "AP70": 0.4252
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.7883,
+        "AP70": 0.5972
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.7507,
+        "AP70": 0.5385
+      }
+    },
+    "ghost_spoof": {
+      "ours_full": {
+        "AP50": 0.6795,
+        "AP70": 0.564
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.6529,
+        "AP70": 0.5343
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.5961,
+        "AP70": 0.4749
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.7005,
+        "AP70": 0.589
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.6627,
+        "AP70": 0.546
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.6843,
+        "AP70": 0.5682
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.6833,
+        "AP70": 0.5645
+      }
+    },
+    "hetpoison_transfer": {
+      "ours_full": {
+        "AP50": 0.851,
+        "AP70": 0.728
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.7485,
+        "AP70": 0.6319
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.8547,
+        "AP70": 0.7168
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.86,
+        "AP70": 0.7459
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.85,
+        "AP70": 0.7257
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.8608,
+        "AP70": 0.7377
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.8506,
+        "AP70": 0.728
+      }
+    }
+  },
+  "objective_point_strata": {
+    "clean": {
+      "ego_only": {
+        "clear_recall": 0.9719,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6907,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0089,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8583,
+        "false_positives": 288
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.9451,
+        "clear_gt": 1457,
+        "sparse_recall": 0.8242,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.8533,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.6612,
+        "false_positives": 1007
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.9629,
+        "clear_gt": 1457,
+        "sparse_recall": 0.8199,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.7867,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.6495,
+        "false_positives": 1064
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.965,
+        "clear_gt": 1457,
+        "sparse_recall": 0.8136,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.76,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.6458,
+        "false_positives": 1079
+      }
+    },
+    "ghost_spoof": {
+      "ego_only": {
+        "clear_recall": 0.9719,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6907,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0089,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8583,
+        "false_positives": 288
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.9451,
+        "clear_gt": 1457,
+        "sparse_recall": 0.8242,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.8489,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.5307,
+        "false_positives": 1737
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.9671,
+        "clear_gt": 1457,
+        "sparse_recall": 0.7542,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.4044,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.7169,
+        "false_positives": 734
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9643,
+        "clear_gt": 1457,
+        "sparse_recall": 0.8114,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.7333,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.578,
+        "false_positives": 1430
+      }
+    },
+    "pgd_removal": {
+      "ego_only": {
+        "clear_recall": 0.9719,
+        "clear_gt": 1457,
+        "sparse_recall": 0.6907,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.0089,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.8583,
+        "false_positives": 288
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.8518,
+        "clear_gt": 1457,
+        "sparse_recall": 0.7055,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.48,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.6296,
+        "false_positives": 992
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.757,
+        "clear_gt": 1457,
+        "sparse_recall": 0.5911,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.4267,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.5246,
+        "false_positives": 1343
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9485,
+        "clear_gt": 1457,
+        "sparse_recall": 0.7246,
+        "sparse_gt": 472,
+        "blind_occluded_recall": 0.4533,
+        "blind_occluded_gt": 225,
+        "precision_proxy": 0.6734,
+        "false_positives": 888
+      }
+    }
+  },
+  "mean_fusion_head_latency_ms": {
+    "unconstrained_att": 1.86,
+    "hetero_def_robosac_vis": 4.82,
+    "ours_bud_fusion": 12.53
+  }
+}
+[Wed Nov 18 08:14:50 HKT 2026] Generating Publication-Grade Figures (Step 4 & Step 5)...
+[Step 4 Complete] Generated 4 high-resolution figures in /root/autodl-tmp/proj_dir2_hetero_trust/outputs/figures
+[Step 5 Complete] Saved qualitative BEV case study figure to /root/autodl-tmp/proj_dir2_hetero_trust/outputs/figures/fig5_qualitative_bev_case.png
+[Wed Nov 18 08:15:27 HKT 2026] FINAL_150_PIPELINE_ALL_DONE

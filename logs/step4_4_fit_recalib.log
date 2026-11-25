@@ -1,0 +1,159 @@
+[Step 4-4 · Fit 盲区诊断与冻结重标定] Fit=100 帧 (Dev=36)
+/root/miniconda3/lib/python3.8/site-packages/timm/models/layers/__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+Loaded pretrained weights for efficientnet-b0
+Align corners:  False
+=========Those modules have trainable component=========
+encoder_m1
+backbone_m1
+encoder_m2
+backbone_m2
+aligner_m2
+pyramid_backbone
+shrink_conv
+cls_head
+reg_head
+dir_head
+
+=========Those modules have untrainable component=========
+
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/tmp_png_ab_test/train_full19_444
+too many cavs reinitialize
+len: 3536
+too many cavs reinitialize
+len: 3536
+
+
+Caution: make sure your sensor type is consistent with:
+{'m1': 'lidar', 'm2': 'camera', 'm3': 'lidar', 'm4': 'camera'}
+Otherwise, modify it in opencood/data_utils/datasets/heter_infer/intermediate_heter_infer_fusion_dataset.py
+
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/tmp_png_ab_test/train_full19_444
+too many cavs reinitialize
+len: 3536
+too many cavs reinitialize
+len: 3536
+
+
+Caution: make sure your sensor type is consistent with:
+{'m1': 'lidar', 'm2': 'camera', 'm3': 'lidar', 'm4': 'camera'}
+Otherwise, modify it in opencood/data_utils/datasets/heter_infer/intermediate_heter_infer_fusion_dataset.py
+
+
+  已处理 Fit 样本 20/100 (207.5s)
+  已处理 Fit 样本 40/100 (427.2s)
+  已处理 Fit 样本 60/100 (641.5s)
+  已处理 Fit 样本 80/100 (857.7s)
+  已处理 Fit 样本 100/100 (1118.3s)
+
+=== [诊断 1] 旧版门控在 Fit-Dev 干净盲区 GT 处的误伤拆解 ===
+  [m1] {"total_blind_gt": 70, "mean_gate": 0.8539, "frac_gate_lt_0.85": 0.2286, "frac_exc_cos_gt_0_near_blind": 0.2571, "frac_exc_drop_gt_0_near_blind": 0.0, "frac_exc_add_gt_0_near_blind": 0.0286, "vis_counts_clear_sparse_occ": [28, 1, 41], "suppressed_by_vis_clear_sparse_occ": [2, 0, 14]}
+  [m2] {"total_blind_gt": 70, "mean_gate": 0.8018, "frac_gate_lt_0.85": 0.2857, "frac_exc_cos_gt_0_near_blind": 0.3143, "frac_exc_drop_gt_0_near_blind": 0.0, "frac_exc_add_gt_0_near_blind": 0.0571, "vis_counts_clear_sparse_occ": [28, 1, 41], "suppressed_by_vis_clear_sparse_occ": [5, 0, 15]}
+
+=== [诊断 2] 整车级回退高门限标定（仅 Fit） ===
+{
+  "m1": {
+    "fit100_clean_p95": 1.0,
+    "fit100_clean_max": 1.0697,
+    "fitdev_local_p50": 1.0706,
+    "fitdev_local_p90": 1.447,
+    "fitdev_local_p95": 1.6003,
+    "fitdev_pgd1s_p10": 0.9995,
+    "fitdev_pgd1s_p25": 1.335,
+    "fitdev_pgd1s_med": 1.6413,
+    "chosen_frame_high_tau": 1.475977,
+    "fit100_clean_trigger_rate": 0.0,
+    "fitdev_pgd1s_trigger_rate": 0.6111,
+    "fitdev_local_trigger_rate": 0.0833
+  },
+  "m2": {
+    "fit100_clean_p95": 1.0,
+    "fit100_clean_max": 1.0792,
+    "fitdev_local_p50": 1.1149,
+    "fitdev_local_p90": 1.5748,
+    "fitdev_local_p95": 1.6632,
+    "fitdev_pgd1s_p10": 1.0947,
+    "fitdev_pgd1s_p25": 1.552,
+    "fitdev_pgd1s_med": 1.7735,
+    "chosen_frame_high_tau": 1.606272,
+    "fit100_clean_trigger_rate": 0.0,
+    "fitdev_pgd1s_trigger_rate": 0.7222,
+    "fitdev_local_trigger_rate": 0.0833
+  }
+}
+
+=== Fit-100 分可见性 3x3 平滑余弦高分位 ===
+{
+  "m1": {
+    "Clear": {
+      "p99.0": 1.229451,
+      "p99.5": 1.422435,
+      "p99.8": 1.680114,
+      "p99.9": 1.823741,
+      "p99.95": 1.944627,
+      "p99.98": 2.146683,
+      "p99.99": 2.281371
+    },
+    "Sparse": {
+      "p99.0": 1.1395,
+      "p99.5": 1.293377,
+      "p99.8": 1.49137,
+      "p99.9": 1.656337,
+      "p99.95": 1.813188,
+      "p99.98": 1.949546,
+      "p99.99": 2.024958
+    },
+    "Occluded": {
+      "p99.0": 1.168523,
+      "p99.5": 1.295319,
+      "p99.8": 1.466258,
+      "p99.9": 1.588639,
+      "p99.95": 1.690888,
+      "p99.98": 1.821854,
+      "p99.99": 1.911021
+    }
+  },
+  "m2": {
+    "Clear": {
+      "p99.0": 1.008859,
+      "p99.5": 1.115373,
+      "p99.8": 1.224653,
+      "p99.9": 1.291877,
+      "p99.95": 1.363372,
+      "p99.98": 1.428086,
+      "p99.99": 1.493523
+    },
+    "Sparse": {
+      "p99.0": 0.948603,
+      "p99.5": 1.030566,
+      "p99.8": 1.135759,
+      "p99.9": 1.218841,
+      "p99.95": 1.291893,
+      "p99.98": 1.368033,
+      "p99.99": 1.430386
+    },
+    "Occluded": {
+      "p99.0": 0.978647,
+      "p99.5": 1.086546,
+      "p99.8": 1.214628,
+      "p99.9": 1.303129,
+      "p99.95": 1.388583,
+      "p99.98": 1.489474,
+      "p99.99": 1.55825
+    }
+  }
+}
+
+=== Fit-Dev 36 帧无防御 vs 旧版 BUD 基准 ===
+  [m1] NoDef clean AP50=0.9310, BlindRec=0.9429
+  [m1] OldBUD clean AP50=0.9231 (loss=+0.0079), BlindRec=0.8571 (loss=+0.0857)
+  [m2] NoDef clean AP50=0.8480, BlindRec=0.6714
+  [m2] OldBUD clean AP50=0.8397 (loss=+0.0083), BlindRec=0.5571 (loss=+0.1143)
+Traceback (most recent call last):
+  File "scripts_v2_mm/step4_4_fit_blind_diag_and_recalib.py", line 778, in <module>
+    main()
+  File "scripts_v2_mm/step4_4_fit_blind_diag_and_recalib.py", line 734, in main
+    assert chosen is not None, "未能找到满足干净损失约束的参数组合！"
+AssertionError: 未能找到满足干净损失约束的参数组合！

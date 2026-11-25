@@ -1,0 +1,54 @@
+[Step 2.1] Caching 280 benign heterogeneous frames from OPV2V train...
+  Calibrated benign_net_norm_99 = 9.127
+  [DUID Epoch 1/8] AleaLoss=0.0118 | SphereLoss=0.1023
+  [DUID Epoch 2/8] AleaLoss=0.0088 | SphereLoss=0.0179
+  [DUID Epoch 3/8] AleaLoss=0.0081 | SphereLoss=0.0079
+  [DUID Epoch 4/8] AleaLoss=0.0079 | SphereLoss=0.0044
+  [DUID Epoch 5/8] AleaLoss=0.0077 | SphereLoss=0.0026
+  [DUID Epoch 6/8] AleaLoss=0.0077 | SphereLoss=0.0018
+  [DUID Epoch 7/8] AleaLoss=0.0075 | SphereLoss=0.0014
+  [DUID Epoch 8/8] AleaLoss=0.0076 | SphereLoss=0.0012
+
+[Step 2.2] Calibrating thresholds on 240 independent OPV2V validate frames (alpha=0.05)...
+  Calibrated benign domain variances: {'profile_a_pp64': 0.005, 'profile_b_second64': 0.03905, 'profile_c_coarse32': 0.03268, 'profile_d_sparse16': 0.02893}
+
+[Step 2 Complete] Saved DUID checkpoint & frozen thresholds:
+{
+  "alpha_budget": 0.05,
+  "hetero_calibrated_95": {
+    "global_residual": 0.13109,
+    "robosac_full": 0.09097,
+    "robosac_vis_calib": 0.08453,
+    "ours_full": 1.54006,
+    "ours_no_alea": 2.22992,
+    "ours_no_epis": 1.53796,
+    "ours_quant95": 0.76262
+  },
+  "homo_calibrated_95": {
+    "global_residual": 0.08015,
+    "robosac_full": 0.06124,
+    "robosac_vis_calib": 0.06581
+  },
+  "bud_calib_params": {
+    "tau_frame": 1.54006,
+    "tau_grid": 0.77179,
+    "tau_epis": 0.00042,
+    "dom_var": {
+      "profile_a_pp64": 0.005,
+      "profile_b_second64": 0.03905,
+      "profile_c_coarse32": 0.03268,
+      "profile_d_sparse16": 0.02893
+    },
+    "tau_a": 0.08,
+    "tau_e": 1.0,
+    "lambda_m": 1.0,
+    "kappa": 6.0,
+    "beta_d": 3.5,
+    "beta_e": 4.0,
+    "beta_att": 1.5,
+    "theta_clear": 0.52,
+    "theta_reach": 0.78,
+    "r_near": 14.0,
+    "act_thresh": 2.2
+  }
+}

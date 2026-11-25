@@ -1,0 +1,108 @@
+[Data] Sampling 520 frames evenly across 3927 OPV2V train frames...
+  Cached 100/520 frames (100 instances) in 96.4s
+  Cached 200/520 frames (200 instances) in 212.2s
+  Cached 300/520 frames (300 instances) in 359.3s
+  Cached 400/520 frames (400 instances) in 517.4s
+  Cached 500/520 frames (500 instances) in 750.5s
+  Cached 520/520 frames (520 instances) in 802.0s
+
+>>> Training [LB-FPA] profile_b_second64 | Bounded(LB-FPA, gamma=1.12) | samples=520, epochs=9
+  Epoch 01/09 (38.1s) | FgL1=0.0327 | FgCosSim=0.7926 | DetLoss=1.6058
+  Epoch 02/09 (31.1s) | FgL1=0.0250 | FgCosSim=0.8708 | DetLoss=0.6806
+  Epoch 03/09 (30.7s) | FgL1=0.0218 | FgCosSim=0.8955 | DetLoss=0.5352
+  Epoch 04/09 (30.0s) | FgL1=0.0203 | FgCosSim=0.9069 | DetLoss=0.4600
+  Epoch 05/09 (31.3s) | FgL1=0.0191 | FgCosSim=0.9145 | DetLoss=0.4072
+  Epoch 06/09 (31.2s) | FgL1=0.0182 | FgCosSim=0.9194 | DetLoss=0.3649
+  Epoch 07/09 (30.7s) | FgL1=0.0176 | FgCosSim=0.9230 | DetLoss=0.3343
+  Epoch 08/09 (32.1s) | FgL1=0.0171 | FgCosSim=0.9255 | DetLoss=0.3083
+  Epoch 09/09 (31.7s) | FgL1=0.0169 | FgCosSim=0.9269 | DetLoss=0.2934
+  [Eval LB-FPA profile_b_second64] {'standalone_ap50': 0.5621, 'standalone_ap70': 0.5045, 'mean_cos_sim': 0.9341, 'empirical_lip_mean': 0.52, 'empirical_lip_max': 0.533, 'theoretical_lip_bound': 1.7965}
+
+>>> Training [Unconstrained] profile_b_second64 | Unconstrained(Conv+BN) | samples=520, epochs=9
+  Epoch 01/09 (32.4s) | FgL1=0.0395 | FgCosSim=0.7032 | DetLoss=1.2511
+  Epoch 02/09 (29.9s) | FgL1=0.0315 | FgCosSim=0.7833 | DetLoss=0.7543
+  Epoch 03/09 (29.1s) | FgL1=0.0290 | FgCosSim=0.8078 | DetLoss=0.5930
+  Epoch 04/09 (29.9s) | FgL1=0.0273 | FgCosSim=0.8229 | DetLoss=0.5011
+  Epoch 05/09 (31.0s) | FgL1=0.0264 | FgCosSim=0.8300 | DetLoss=0.4434
+  Epoch 06/09 (31.5s) | FgL1=0.0258 | FgCosSim=0.8346 | DetLoss=0.3964
+  Epoch 07/09 (25.4s) | FgL1=0.0254 | FgCosSim=0.8376 | DetLoss=0.3601
+  Epoch 08/09 (25.7s) | FgL1=0.0252 | FgCosSim=0.8396 | DetLoss=0.3301
+  Epoch 09/09 (25.7s) | FgL1=0.0250 | FgCosSim=0.8408 | DetLoss=0.3090
+  [Eval Unconstrained profile_b_second64] {'standalone_ap50': 0.5559, 'standalone_ap70': 0.4748, 'mean_cos_sim': 0.8087, 'empirical_lip_mean': 6.2164, 'empirical_lip_max': 6.5779, 'theoretical_lip_bound': 'Unbounded'}
+
+>>> Training [Surrogate] profile_b_second64 | Unconstrained(Conv+BN) | samples=260, epochs=7
+  Epoch 01/07 (14.2s) | FgL1=0.0454 | FgCosSim=0.6585 | DetLoss=2.6458
+  Epoch 02/07 (12.6s) | FgL1=0.0354 | FgCosSim=0.7253 | DetLoss=0.9684
+  Epoch 03/07 (12.5s) | FgL1=0.0324 | FgCosSim=0.7734 | DetLoss=0.8145
+  Epoch 04/07 (12.5s) | FgL1=0.0307 | FgCosSim=0.7923 | DetLoss=0.7029
+  Epoch 05/07 (12.5s) | FgL1=0.0293 | FgCosSim=0.8079 | DetLoss=0.6109
+  Epoch 06/07 (12.2s) | FgL1=0.0284 | FgCosSim=0.8161 | DetLoss=0.5357
+  Epoch 07/07 (12.3s) | FgL1=0.0280 | FgCosSim=0.8200 | DetLoss=0.4894
+
+>>> Training [LB-FPA] profile_d_sparse16 | Bounded(LB-FPA, gamma=1.12) | samples=520, epochs=9
+  Epoch 01/09 (24.6s) | FgL1=0.0346 | FgCosSim=0.7802 | DetLoss=1.6741
+  Epoch 02/09 (23.6s) | FgL1=0.0280 | FgCosSim=0.8450 | DetLoss=0.8433
+  Epoch 03/09 (23.7s) | FgL1=0.0258 | FgCosSim=0.8614 | DetLoss=0.7310
+  Epoch 04/09 (22.7s) | FgL1=0.0247 | FgCosSim=0.8703 | DetLoss=0.6545
+  Epoch 05/09 (22.5s) | FgL1=0.0238 | FgCosSim=0.8766 | DetLoss=0.5986
+  Epoch 06/09 (25.4s) | FgL1=0.0232 | FgCosSim=0.8810 | DetLoss=0.5507
+  Epoch 07/09 (28.1s) | FgL1=0.0227 | FgCosSim=0.8843 | DetLoss=0.5074
+  Epoch 08/09 (30.1s) | FgL1=0.0224 | FgCosSim=0.8865 | DetLoss=0.4763
+  Epoch 09/09 (29.5s) | FgL1=0.0222 | FgCosSim=0.8877 | DetLoss=0.4571
+  [Eval LB-FPA profile_d_sparse16] {'standalone_ap50': 0.4602, 'standalone_ap70': 0.3466, 'mean_cos_sim': 0.908, 'empirical_lip_mean': 0.6996, 'empirical_lip_max': 0.7124, 'theoretical_lip_bound': 1.7965}
+
+>>> Training [Unconstrained] profile_d_sparse16 | Unconstrained(Conv+BN) | samples=520, epochs=9
+  Epoch 01/09 (27.4s) | FgL1=0.0411 | FgCosSim=0.6950 | DetLoss=1.5712
+  Epoch 02/09 (24.8s) | FgL1=0.0344 | FgCosSim=0.7541 | DetLoss=0.8349
+  Epoch 03/09 (24.6s) | FgL1=0.0325 | FgCosSim=0.7765 | DetLoss=0.7318
+  Epoch 04/09 (24.8s) | FgL1=0.0313 | FgCosSim=0.7886 | DetLoss=0.6649
+  Epoch 05/09 (23.1s) | FgL1=0.0306 | FgCosSim=0.7955 | DetLoss=0.6029
+  Epoch 06/09 (24.2s) | FgL1=0.0297 | FgCosSim=0.8066 | DetLoss=0.5458
+  Epoch 07/09 (24.5s) | FgL1=0.0289 | FgCosSim=0.8196 | DetLoss=0.4970
+  Epoch 08/09 (24.2s) | FgL1=0.0283 | FgCosSim=0.8255 | DetLoss=0.4552
+  Epoch 09/09 (23.8s) | FgL1=0.0281 | FgCosSim=0.8275 | DetLoss=0.4250
+  [Eval Unconstrained profile_d_sparse16] {'standalone_ap50': 0.4613, 'standalone_ap70': 0.3522, 'mean_cos_sim': 0.8133, 'empirical_lip_mean': 11.3752, 'empirical_lip_max': 11.523, 'theoretical_lip_bound': 'Unbounded'}
+
+>>> Training [Surrogate] profile_d_sparse16 | Unconstrained(Conv+BN) | samples=260, epochs=7
+  Epoch 01/07 (13.9s) | FgL1=0.0484 | FgCosSim=0.6077 | DetLoss=1.8117
+  Epoch 02/07 (12.4s) | FgL1=0.0381 | FgCosSim=0.6801 | DetLoss=1.0023
+  Epoch 03/07 (12.2s) | FgL1=0.0367 | FgCosSim=0.6996 | DetLoss=0.8891
+  Epoch 04/07 (12.7s) | FgL1=0.0356 | FgCosSim=0.7205 | DetLoss=0.8066
+  Epoch 05/07 (11.9s) | FgL1=0.0346 | FgCosSim=0.7367 | DetLoss=0.7292
+  Epoch 06/07 (12.1s) | FgL1=0.0341 | FgCosSim=0.7430 | DetLoss=0.6648
+  Epoch 07/07 (13.7s) | FgL1=0.0337 | FgCosSim=0.7471 | DetLoss=0.6196
+
+>>> Training [LB-FPA] profile_c_coarse32 | Bounded(LB-FPA, gamma=1.12) | samples=520, epochs=9
+  Epoch 01/09 (30.1s) | FgL1=0.0341 | FgCosSim=0.7834 | DetLoss=1.6170
+  Epoch 02/09 (28.8s) | FgL1=0.0265 | FgCosSim=0.8583 | DetLoss=0.7836
+  Epoch 03/09 (27.0s) | FgL1=0.0243 | FgCosSim=0.8756 | DetLoss=0.6731
+  Epoch 04/09 (27.0s) | FgL1=0.0231 | FgCosSim=0.8842 | DetLoss=0.5991
+  Epoch 05/09 (28.2s) | FgL1=0.0223 | FgCosSim=0.8897 | DetLoss=0.5529
+  Epoch 06/09 (27.1s) | FgL1=0.0216 | FgCosSim=0.8942 | DetLoss=0.5061
+  Epoch 07/09 (27.2s) | FgL1=0.0211 | FgCosSim=0.8974 | DetLoss=0.4680
+  Epoch 08/09 (27.6s) | FgL1=0.0208 | FgCosSim=0.8994 | DetLoss=0.4405
+  Epoch 09/09 (24.1s) | FgL1=0.0206 | FgCosSim=0.9005 | DetLoss=0.4229
+  [Eval LB-FPA profile_c_coarse32] {'standalone_ap50': 0.4987, 'standalone_ap70': 0.3983, 'mean_cos_sim': 0.9194, 'empirical_lip_mean': 0.7208, 'empirical_lip_max': 0.7408, 'theoretical_lip_bound': 1.7965}
+
+>>> Training [Unconstrained] profile_c_coarse32 | Unconstrained(Conv+BN) | samples=520, epochs=9
+  Epoch 01/09 (24.0s) | FgL1=0.0403 | FgCosSim=0.7002 | DetLoss=1.2614
+  Epoch 02/09 (21.5s) | FgL1=0.0327 | FgCosSim=0.7681 | DetLoss=0.7933
+  Epoch 03/09 (21.7s) | FgL1=0.0303 | FgCosSim=0.8022 | DetLoss=0.6958
+  Epoch 04/09 (20.6s) | FgL1=0.0293 | FgCosSim=0.8131 | DetLoss=0.6194
+  Epoch 05/09 (21.1s) | FgL1=0.0287 | FgCosSim=0.8188 | DetLoss=0.5680
+  Epoch 06/09 (21.7s) | FgL1=0.0281 | FgCosSim=0.8243 | DetLoss=0.5143
+  Epoch 07/09 (21.4s) | FgL1=0.0276 | FgCosSim=0.8288 | DetLoss=0.4661
+  Epoch 08/09 (20.8s) | FgL1=0.0270 | FgCosSim=0.8342 | DetLoss=0.4295
+  Epoch 09/09 (21.4s) | FgL1=0.0269 | FgCosSim=0.8357 | DetLoss=0.4031
+  [Eval Unconstrained profile_c_coarse32] {'standalone_ap50': 0.505, 'standalone_ap70': 0.4011, 'mean_cos_sim': 0.8017, 'empirical_lip_mean': 5.458, 'empirical_lip_max': 5.5321, 'theoretical_lip_bound': 'Unbounded'}
+
+>>> Training [Surrogate] profile_c_coarse32 | Unconstrained(Conv+BN) | samples=260, epochs=7
+  Epoch 01/07 (12.0s) | FgL1=0.0481 | FgCosSim=0.5877 | DetLoss=1.6828
+  Epoch 02/07 (10.2s) | FgL1=0.0387 | FgCosSim=0.6572 | DetLoss=0.9539
+  Epoch 03/07 (10.4s) | FgL1=0.0367 | FgCosSim=0.6898 | DetLoss=0.8384
+  Epoch 04/07 (10.3s) | FgL1=0.0359 | FgCosSim=0.6995 | DetLoss=0.7573
+  Epoch 05/07 (10.4s) | FgL1=0.0347 | FgCosSim=0.7196 | DetLoss=0.6964
+  Epoch 06/07 (10.6s) | FgL1=0.0340 | FgCosSim=0.7295 | DetLoss=0.6271
+  Epoch 07/07 (10.7s) | FgL1=0.0333 | FgCosSim=0.7407 | DetLoss=0.5855
+
+[Step 1 Complete] Saved checkpoints & alignment/Lipschitz report to /root/autodl-tmp/proj_dir2_hetero_trust/outputs/step1_protocol_alignment_report.json

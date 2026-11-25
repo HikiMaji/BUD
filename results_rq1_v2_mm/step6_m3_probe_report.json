@@ -1,0 +1,237 @@
+{
+  "meta": {
+    "description": "步骤 ⑥ HEAL m3 (32线 LiDAR SECOND) 限时探路诊断报告",
+    "probe_frames": 16,
+    "elapsed_sec": 792.59,
+    "git_commit": "bcfddc609013f4680b67df25816dbc635d21fcee",
+    "git_short": "bcfddc6",
+    "git_branch": "master",
+    "git_dirty_at_write": false
+  },
+  "ckpt_check": {
+    "m3_model_keys_cnt": 141,
+    "m3_ckpt_keys_cnt": 141,
+    "missing_m3_keys_cnt": 0,
+    "missing_m3_sample": [],
+    "shape_mismatch_m3": [
+      [
+        "encoder_m3.spconv_block.conv_input.0.weight",
+        [
+          16,
+          3,
+          3,
+          3,
+          64
+        ],
+        [
+          3,
+          3,
+          3,
+          64,
+          16
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv1.0.0.weight",
+        [
+          16,
+          3,
+          3,
+          3,
+          16
+        ],
+        [
+          3,
+          3,
+          3,
+          16,
+          16
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv2.0.0.weight",
+        [
+          32,
+          3,
+          3,
+          3,
+          16
+        ],
+        [
+          3,
+          3,
+          3,
+          16,
+          32
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv2.1.0.weight",
+        [
+          32,
+          3,
+          3,
+          3,
+          32
+        ],
+        [
+          3,
+          3,
+          3,
+          32,
+          32
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv2.2.0.weight",
+        [
+          32,
+          3,
+          3,
+          3,
+          32
+        ],
+        [
+          3,
+          3,
+          3,
+          32,
+          32
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv3.0.0.weight",
+        [
+          64,
+          3,
+          3,
+          3,
+          32
+        ],
+        [
+          3,
+          3,
+          3,
+          32,
+          64
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv3.1.0.weight",
+        [
+          64,
+          3,
+          3,
+          3,
+          64
+        ],
+        [
+          3,
+          3,
+          3,
+          64,
+          64
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv3.2.0.weight",
+        [
+          64,
+          3,
+          3,
+          3,
+          64
+        ],
+        [
+          3,
+          3,
+          3,
+          64,
+          64
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv4.0.0.weight",
+        [
+          64,
+          3,
+          3,
+          3,
+          64
+        ],
+        [
+          3,
+          3,
+          3,
+          64,
+          64
+        ]
+      ],
+      [
+        "encoder_m3.spconv_block.conv4.1.0.weight",
+        [
+          64,
+          3,
+          3,
+          3,
+          64
+        ],
+        [
+          3,
+          3,
+          3,
+          64,
+          64
+        ]
+      ]
+    ],
+    "load_missing_total": 12,
+    "load_unexpected_total": 0
+  },
+  "eval_16frames": {
+    "m1_collab": {
+      "tested_frames": 16,
+      "success_frames": 16,
+      "ap50": 0.83339,
+      "ap70": 0.79135,
+      "mean_l0_cos_dev": 0.38614,
+      "mean_collab_feat_std": 0.55442,
+      "mean_collab_nonzero_ratio": 1.0,
+      "errors": []
+    },
+    "m2_collab": {
+      "tested_frames": 16,
+      "success_frames": 0,
+      "ap50": 0.0,
+      "ap70": 0.0,
+      "mean_l0_cos_dev": null,
+      "mean_collab_feat_std": null,
+      "mean_collab_nonzero_ratio": null,
+      "errors": [
+        "idx=419: IndexError: index 3 is out of bounds for dimension 1 with size 3",
+        "idx=482: IndexError: index 3 is out of bounds for dimension 1 with size 3",
+        "idx=1897: IndexError: index 3 is out of bounds for dimension 1 with size 3",
+        "idx=2101: IndexError: index 3 is out of bounds for dimension 1 with size 3",
+        "idx=2334: IndexError: index 3 is out of bounds for dimension 1 with size 3"
+      ]
+    },
+    "m3_collab": {
+      "tested_frames": 16,
+      "success_frames": 0,
+      "ap50": 0.0,
+      "ap70": 0.0,
+      "mean_l0_cos_dev": null,
+      "mean_collab_feat_std": null,
+      "mean_collab_nonzero_ratio": null,
+      "errors": [
+        "idx=419: RuntimeError: max(): Expected reduction dim to be specified for input.numel() == 0. Specify the reduction dim with the 'dim' argument.",
+        "idx=482: RuntimeError: max(): Expected reduction dim to be specified for input.numel() == 0. Specify the reduction dim with the 'dim' argument.",
+        "idx=1897: RuntimeError: max(): Expected reduction dim to be specified for input.numel() == 0. Specify the reduction dim with the 'dim' argument.",
+        "idx=2101: RuntimeError: max(): Expected reduction dim to be specified for input.numel() == 0. Specify the reduction dim with the 'dim' argument.",
+        "idx=2334: RuntimeError: max(): Expected reduction dim to be specified for input.numel() == 0. Specify the reduction dim with the 'dim' argument."
+      ]
+    }
+  },
+  "verdict": "STOP_LOSS",
+  "reason": "m3 存在权重/对齐严重异常或报错，建议按止损原则专注 m1+m2 主线与纯 LiDAR 四异构补充。"
+}

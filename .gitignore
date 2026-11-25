@@ -1,0 +1,59 @@
+# === 数据集、软链与原始传感器/图像文件 ===
+data_links/
+data_images_q95/
+tmp_png_ab_test/
+*.pcd
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tif
+*.tiff
+*.mp4
+*.avi
+
+# === 第三方只读代码库 ===
+third_party/
+third_party_v2_mm/
+
+# === 模型权重、二进制与大体积中间输出 ===
+checkpoints_v2_mm/
+outputs/
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.onnx
+*.safetensors
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.so
+*.o
+*.a
+
+# === 特征缓存、断点序列缓存与压缩包 ===
+*seq_cache*/
+*cache*/
+results_rq1_v2_mm/*_cache/
+results_rq1_v2_mm/final_opv2v_test_once/cache_*/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+*.rar
+
+# === Python / 系统临时文件 ===
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+*.tmp
+*.swp
+.DS_Store

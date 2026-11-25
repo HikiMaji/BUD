@@ -1,0 +1,1838 @@
+{
+  "meta": {
+    "description": "步骤 ⑤-3 异构车队统一判据跨模态误报偏差与检出率权衡实证报告（Dev-320，成对 Bootstrap 95% CI）",
+    "seq_order": [
+      "2021_08_18_09_02_56",
+      "2021_08_22_10_10_40",
+      "2021_08_22_22_30_58",
+      "2021_08_23_23_08_17",
+      "2021_08_24_21_29_28",
+      "2021_08_22_06_43_37",
+      "2021_09_10_12_07_11",
+      "2021_09_09_22_21_11"
+    ],
+    "total_frames": 320,
+    "bootstrap_iters": 2000,
+    "elapsed_sec": 0.23,
+    "git_commit": "9e35285ab06b5a11756bc8ad3a2dee405c70d7f5",
+    "git_short": "9e35285",
+    "git_branch": "master",
+    "git_dirty_at_write": false
+  },
+  "experiment_a_existing_defenses_bias": {
+    "clean_score_distributions_2cav": {
+      "tier1_unified": {
+        "m1": {
+          "n": 320,
+          "mean": 2.75686,
+          "std": 1.03082,
+          "median": 2.60346,
+          "p90": 4.23849,
+          "p95": 4.41787,
+          "max": 5.17498
+        },
+        "m2": {
+          "n": 320,
+          "mean": 2.23006,
+          "std": 0.62474,
+          "median": 2.30667,
+          "p90": 2.99879,
+          "p95": 3.24158,
+          "max": 4.03052
+        }
+      },
+      "tier4_ours": {
+        "m1": {
+          "n": 320,
+          "mean": 0.69739,
+          "std": 0.21202,
+          "median": 0.7664,
+          "p90": 0.91886,
+          "p95": 0.94793,
+          "max": 1.04284
+        },
+        "m2": {
+          "n": 320,
+          "mean": 0.57574,
+          "std": 0.19542,
+          "median": 0.55724,
+          "p90": 0.83493,
+          "p95": 0.89068,
+          "max": 0.95078
+        }
+      },
+      "hetshield_shared": {
+        "m1": {
+          "n": 320,
+          "mean": 0.17138,
+          "std": 0.06136,
+          "median": 0.15807,
+          "p90": 0.26496,
+          "p95": 0.29701,
+          "max": 0.34743
+        },
+        "m2": {
+          "n": 320,
+          "mean": 0.37889,
+          "std": 0.03085,
+          "median": 0.37741,
+          "p90": 0.42342,
+          "p95": 0.43755,
+          "max": 0.48219
+        }
+      },
+      "lucia": {
+        "m1": {
+          "n": 320,
+          "mean": 0.9994,
+          "std": 0.00234,
+          "median": 1.0,
+          "p90": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        },
+        "m2": {
+          "n": 320,
+          "mean": 1.0,
+          "std": 0.0,
+          "median": 1.0,
+          "p90": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        }
+      }
+    },
+    "hetshield_components_clean": {
+      "m1": {
+        "tau_k": {
+          "n": 320,
+          "mean": 0.22348,
+          "std": 0.08761,
+          "median": 0.2126,
+          "p90": 0.33443,
+          "p95": 0.40015,
+          "max": 0.50463
+        },
+        "sigma_k": {
+          "n": 320,
+          "mean": 0.88073,
+          "std": 0.0495,
+          "median": 0.88922,
+          "p90": 0.9439,
+          "p95": 0.94597,
+          "max": 0.95144
+        },
+        "s_k": {
+          "n": 320,
+          "mean": 0.17138,
+          "std": 0.06136,
+          "median": 0.15807,
+          "p90": 0.26496,
+          "p95": 0.29701,
+          "max": 0.34743
+        }
+      },
+      "m2": {
+        "tau_k": {
+          "n": 320,
+          "mean": 0.1474,
+          "std": 0.06171,
+          "median": 0.13907,
+          "p90": 0.2285,
+          "p95": 0.26596,
+          "max": 0.3917
+        },
+        "sigma_k": {
+          "n": 320,
+          "mean": 0.38962,
+          "std": 0.0207,
+          "median": 0.39022,
+          "p90": 0.41534,
+          "p95": 0.42457,
+          "max": 0.4357
+        },
+        "s_k": {
+          "n": 320,
+          "mean": 0.37889,
+          "std": 0.03085,
+          "median": 0.37741,
+          "p90": 0.42342,
+          "p95": 0.43755,
+          "max": 0.48219
+        }
+      }
+    },
+    "hetshield_fixed_thresholds": {
+      "paper_tau_0.3": {
+        "clean_fpr_overall": 0.51406,
+        "clean_fpr_m1": {
+          "val": 0.04063,
+          "ci95": [
+            0.00268,
+            0.13159
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.9875,
+          "ci95": [
+            0.97426,
+            0.99721
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.94688,
+          "diff_ci95": [
+            0.84766,
+            0.99134
+          ],
+          "significant_pos": true
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.19375,
+              "ci95": [
+                0.05276,
+                0.44243
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ]
+            },
+            "attacker_m1_auroc": 0.78173,
+            "attacker_m2_auroc": 0.97593,
+            "overall_auroc": 0.69569
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.04375,
+              "ci95": [
+                0.00268,
+                0.14474
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.9875,
+              "ci95": [
+                0.97426,
+                0.99721
+              ]
+            },
+            "attacker_m1_auroc": 0.50923,
+            "attacker_m2_auroc": 0.5651,
+            "overall_auroc": 0.51868
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.05,
+              "ci95": [
+                0.00268,
+                0.16809
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.9875,
+              "ci95": [
+                0.97426,
+                0.99721
+              ]
+            },
+            "attacker_m1_auroc": 0.52766,
+            "attacker_m2_auroc": 0.65751,
+            "overall_auroc": 0.54645
+          }
+        }
+      },
+      "fit_tuned_tau_p95": {
+        "clean_fpr_overall": 0.0,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.78173,
+            "attacker_m2_auroc": 0.97593,
+            "overall_auroc": 0.69569
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50923,
+            "attacker_m2_auroc": 0.5651,
+            "overall_auroc": 0.51868
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.52766,
+            "attacker_m2_auroc": 0.65751,
+            "overall_auroc": 0.54645
+          }
+        }
+      }
+    },
+    "lucia_2cav_clean": {
+      "m1": {
+        "l1": {
+          "n": 320,
+          "mean": 21.84702,
+          "std": 12.9041,
+          "median": 18.77546,
+          "p90": 42.89405,
+          "p95": 51.84837,
+          "max": 53.81798
+        },
+        "trust": {
+          "n": 320,
+          "mean": 0.0006,
+          "std": 0.00234,
+          "median": 0.0,
+          "p90": 0.00055,
+          "p95": 0.00457,
+          "max": 0.01575
+        }
+      },
+      "m2": {
+        "l1": {
+          "n": 320,
+          "mean": 54.16875,
+          "std": 1.60691,
+          "median": 53.62604,
+          "p90": 56.77309,
+          "p95": 57.11884,
+          "max": 57.48907
+        },
+        "trust": {
+          "n": 320,
+          "mean": 0.0,
+          "std": 0.0,
+          "median": 0.0,
+          "p90": 0.0,
+          "p95": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    "lucia_mixed_multicav_clean": {
+      "m1": {
+        "trust": {
+          "n": 362,
+          "mean": 0.97445,
+          "std": 0.11246,
+          "median": 1.0,
+          "p90": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        },
+        "l1": {
+          "n": 362,
+          "mean": 128.01182,
+          "std": 51.55099,
+          "median": 117.43212,
+          "p90": 200.21458,
+          "p95": 206.20598,
+          "max": 216.20352
+        }
+      },
+      "m2": {
+        "trust": {
+          "n": 440,
+          "mean": 0.39384,
+          "std": 0.43079,
+          "median": 0.15534,
+          "p90": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        },
+        "l1": {
+          "n": 440,
+          "mean": 146.35749,
+          "std": 42.79154,
+          "median": 124.83231,
+          "p90": 200.12807,
+          "p95": 221.57216,
+          "max": 234.25241
+        }
+      }
+    },
+    "robosac_ge3cav_clean": {
+      "all_m1": {
+        "total_frames": 279,
+        "jaccard_dist": {
+          "n": 279,
+          "mean": 0.6843,
+          "std": 0.14735,
+          "median": 0.7,
+          "p90": 0.88235,
+          "p95": 0.9375,
+          "max": 0.9375
+        },
+        "reject_rate_thresh_0.3": 0.0,
+        "reject_rate_thresh_0.5": 0.12545
+      },
+      "all_m2": {
+        "total_frames": 279,
+        "jaccard_dist": {
+          "n": 279,
+          "mean": 0.71817,
+          "std": 0.16977,
+          "median": 0.7619,
+          "p90": 0.91795,
+          "p95": 0.9375,
+          "max": 0.9697
+        },
+        "reject_rate_thresh_0.3": 0.0,
+        "reject_rate_thresh_0.5": 0.13978
+      },
+      "mixed": {
+        "total_frames": 279,
+        "jaccard_dist": {
+          "n": 279,
+          "mean": 0.69163,
+          "std": 0.16154,
+          "median": 0.72,
+          "p90": 0.89474,
+          "p95": 0.9375,
+          "max": 0.96
+        },
+        "reject_rate_thresh_0.3": 0.0,
+        "reject_rate_thresh_0.5": 0.15412
+      }
+    }
+  },
+  "experiment_b_equal_fpr": {
+    "fpr_2pct": {
+      "tier1_unified": {
+        "clean_fpr_overall": 0.02031,
+        "clean_fpr_m1": {
+          "val": 0.04063,
+          "ci95": [
+            0.00746,
+            0.09574
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.04063,
+          "diff_ci95": [
+            -0.09574,
+            -0.00746
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.7125,
+              "ci95": [
+                0.46666,
+                0.89562
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.75938,
+              "ci95": [
+                0.54682,
+                0.91942
+              ]
+            },
+            "attacker_m1_auroc": 0.893,
+            "attacker_m2_auroc": 0.92947,
+            "overall_auroc": 0.91597
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.2375,
+              "ci95": [
+                0.05784,
+                0.39084
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.08125,
+              "ci95": [
+                0.01805,
+                0.13672
+              ]
+            },
+            "attacker_m1_auroc": 0.74266,
+            "attacker_m2_auroc": 0.85114,
+            "overall_auroc": 0.78939
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.65625,
+              "ci95": [
+                0.53968,
+                0.7462
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.60938,
+              "ci95": [
+                0.56618,
+                0.67009
+              ]
+            },
+            "attacker_m1_auroc": 0.93869,
+            "attacker_m2_auroc": 0.98489,
+            "overall_auroc": 0.95839
+          }
+        },
+        "threshold_used": 4.520903
+      },
+      "tier4_ours": {
+        "clean_fpr_overall": 0.02031,
+        "clean_fpr_m1": {
+          "val": 0.04063,
+          "ci95": [
+            0.01095,
+            0.07005
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.04063,
+          "diff_ci95": [
+            -0.07005,
+            -0.01095
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.79375,
+              "ci95": [
+                0.56715,
+                0.94001
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.82188,
+              "ci95": [
+                0.59253,
+                0.96853
+              ]
+            },
+            "attacker_m1_auroc": 0.88697,
+            "attacker_m2_auroc": 0.91861,
+            "overall_auroc": 0.90684
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.69688,
+              "ci95": [
+                0.41687,
+                0.8665
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.68437,
+              "ci95": [
+                0.42173,
+                0.84927
+              ]
+            },
+            "attacker_m1_auroc": 0.78783,
+            "attacker_m2_auroc": 0.83417,
+            "overall_auroc": 0.81195
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.6125,
+              "ci95": [
+                0.36047,
+                0.79238
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.4375,
+              "ci95": [
+                0.25539,
+                0.60446
+              ]
+            },
+            "attacker_m1_auroc": 0.85247,
+            "attacker_m2_auroc": 0.89853,
+            "overall_auroc": 0.86569
+          }
+        },
+        "threshold_used": 0.955407
+      },
+      "hetshield_shared": {
+        "clean_fpr_overall": 0.02031,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.04063,
+          "ci95": [
+            0.00357,
+            0.07692
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.04063,
+          "diff_ci95": [
+            0.00357,
+            0.07692
+          ],
+          "significant_pos": true
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.975,
+              "ci95": [
+                0.96313,
+                0.98273
+              ]
+            },
+            "attacker_m1_auroc": 0.78173,
+            "attacker_m2_auroc": 0.97593,
+            "overall_auroc": 0.69569
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.05937,
+              "ci95": [
+                0.00357,
+                0.13333
+              ]
+            },
+            "attacker_m1_auroc": 0.50923,
+            "attacker_m2_auroc": 0.5651,
+            "overall_auroc": 0.51868
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.14375,
+              "ci95": [
+                0.02594,
+                0.32024
+              ]
+            },
+            "attacker_m1_auroc": 0.52766,
+            "attacker_m2_auroc": 0.65751,
+            "overall_auroc": 0.54645
+          }
+        },
+        "threshold_used": 0.43935
+      },
+      "lucia": {
+        "clean_fpr_overall": 0.0,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50532,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.5025
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50033,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50008
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50062,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50015
+          }
+        },
+        "threshold_used": 1.0
+      }
+    },
+    "fpr_5pct": {
+      "tier1_unified": {
+        "clean_fpr_overall": 0.05,
+        "clean_fpr_m1": {
+          "val": 0.1,
+          "ci95": [
+            0.01271,
+            0.19937
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.1,
+          "diff_ci95": [
+            -0.19937,
+            -0.01271
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.75313,
+              "ci95": [
+                0.53333,
+                0.91359
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.79688,
+              "ci95": [
+                0.59648,
+                0.94119
+              ]
+            },
+            "attacker_m1_auroc": 0.893,
+            "attacker_m2_auroc": 0.92947,
+            "overall_auroc": 0.91597
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.39062,
+              "ci95": [
+                0.18659,
+                0.55595
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.225,
+              "ci95": [
+                0.10752,
+                0.31829
+              ]
+            },
+            "attacker_m1_auroc": 0.74266,
+            "attacker_m2_auroc": 0.85114,
+            "overall_auroc": 0.78939
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.77812,
+              "ci95": [
+                0.71005,
+                0.86222
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.70312,
+              "ci95": [
+                0.65455,
+                0.74126
+              ]
+            },
+            "attacker_m1_auroc": 0.93869,
+            "attacker_m2_auroc": 0.98489,
+            "overall_auroc": 0.95839
+          }
+        },
+        "threshold_used": 4.23937
+      },
+      "tier4_ours": {
+        "clean_fpr_overall": 0.05,
+        "clean_fpr_m1": {
+          "val": 0.0875,
+          "ci95": [
+            0.03621,
+            0.12501
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0125,
+          "ci95": [
+            0.0,
+            0.0317
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.075,
+          "diff_ci95": [
+            -0.11302,
+            -0.02867
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.80625,
+              "ci95": [
+                0.57463,
+                0.95123
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.83125,
+              "ci95": [
+                0.6194,
+                0.96853
+              ]
+            },
+            "attacker_m1_auroc": 0.88697,
+            "attacker_m2_auroc": 0.91861,
+            "overall_auroc": 0.90684
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.7,
+              "ci95": [
+                0.42595,
+                0.8665
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.7,
+              "ci95": [
+                0.44492,
+                0.86089
+              ]
+            },
+            "attacker_m1_auroc": 0.78783,
+            "attacker_m2_auroc": 0.83417,
+            "overall_auroc": 0.81195
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.66563,
+              "ci95": [
+                0.41454,
+                0.83133
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.49688,
+              "ci95": [
+                0.29411,
+                0.6747
+              ]
+            },
+            "attacker_m1_auroc": 0.85247,
+            "attacker_m2_auroc": 0.89853,
+            "overall_auroc": 0.86569
+          }
+        },
+        "threshold_used": 0.922141
+      },
+      "hetshield_shared": {
+        "clean_fpr_overall": 0.05,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.1,
+          "ci95": [
+            0.00357,
+            0.24687
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.1,
+          "diff_ci95": [
+            0.00357,
+            0.24687
+          ],
+          "significant_pos": true
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.975,
+              "ci95": [
+                0.96313,
+                0.98273
+              ]
+            },
+            "attacker_m1_auroc": 0.78173,
+            "attacker_m2_auroc": 0.97593,
+            "overall_auroc": 0.69569
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.10625,
+              "ci95": [
+                0.00784,
+                0.24798
+              ]
+            },
+            "attacker_m1_auroc": 0.50923,
+            "attacker_m2_auroc": 0.5651,
+            "overall_auroc": 0.51868
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.20625,
+              "ci95": [
+                0.04651,
+                0.43529
+              ]
+            },
+            "attacker_m1_auroc": 0.52766,
+            "attacker_m2_auroc": 0.65751,
+            "overall_auroc": 0.54645
+          }
+        },
+        "threshold_used": 0.424304
+      },
+      "lucia": {
+        "clean_fpr_overall": 0.0,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50532,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.5025
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50033,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50008
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50062,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50015
+          }
+        },
+        "threshold_used": 1.0
+      }
+    },
+    "fpr_10pct": {
+      "tier1_unified": {
+        "clean_fpr_overall": 0.1,
+        "clean_fpr_m1": {
+          "val": 0.19062,
+          "ci95": [
+            0.03435,
+            0.32994
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.00937,
+          "ci95": [
+            0.0,
+            0.02858
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.18125,
+          "diff_ci95": [
+            -0.31894,
+            -0.02479
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.80312,
+              "ci95": [
+                0.5963,
+                0.94037
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.8375,
+              "ci95": [
+                0.63414,
+                0.9626
+              ]
+            },
+            "attacker_m1_auroc": 0.893,
+            "attacker_m2_auroc": 0.92947,
+            "overall_auroc": 0.91597
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.6,
+              "ci95": [
+                0.35948,
+                0.76293
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.53438,
+              "ci95": [
+                0.34118,
+                0.65689
+              ]
+            },
+            "attacker_m1_auroc": 0.74266,
+            "attacker_m2_auroc": 0.85114,
+            "overall_auroc": 0.78939
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.88125,
+              "ci95": [
+                0.82977,
+                0.93834
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.8375,
+              "ci95": [
+                0.80935,
+                0.868
+              ]
+            },
+            "attacker_m1_auroc": 0.93869,
+            "attacker_m2_auroc": 0.98489,
+            "overall_auroc": 0.95839
+          }
+        },
+        "threshold_used": 3.825566
+      },
+      "tier4_ours": {
+        "clean_fpr_overall": 0.1,
+        "clean_fpr_m1": {
+          "val": 0.1625,
+          "ci95": [
+            0.06367,
+            0.23311
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0375,
+          "ci95": [
+            0.00552,
+            0.09092
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.125,
+          "diff_ci95": [
+            -0.20983,
+            -0.02174
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.80937,
+              "ci95": [
+                0.57733,
+                0.95615
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.83437,
+              "ci95": [
+                0.62109,
+                0.96853
+              ]
+            },
+            "attacker_m1_auroc": 0.88697,
+            "attacker_m2_auroc": 0.91861,
+            "overall_auroc": 0.90684
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.70937,
+              "ci95": [
+                0.43692,
+                0.87423
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.70937,
+              "ci95": [
+                0.45871,
+                0.86514
+              ]
+            },
+            "attacker_m1_auroc": 0.78783,
+            "attacker_m2_auroc": 0.83417,
+            "overall_auroc": 0.81195
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.68437,
+              "ci95": [
+                0.45622,
+                0.84337
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.5375,
+              "ci95": [
+                0.31975,
+                0.73181
+              ]
+            },
+            "attacker_m1_auroc": 0.85247,
+            "attacker_m2_auroc": 0.89853,
+            "overall_auroc": 0.86569
+          }
+        },
+        "threshold_used": 0.897295
+      },
+      "hetshield_shared": {
+        "clean_fpr_overall": 0.1,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.2,
+          "ci95": [
+            0.0695,
+            0.34091
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.2,
+          "diff_ci95": [
+            0.0695,
+            0.34091
+          ],
+          "significant_pos": true
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.975,
+              "ci95": [
+                0.96313,
+                0.98273
+              ]
+            },
+            "attacker_m1_auroc": 0.78173,
+            "attacker_m2_auroc": 0.97593,
+            "overall_auroc": 0.69569
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.21875,
+              "ci95": [
+                0.08801,
+                0.3591
+              ]
+            },
+            "attacker_m1_auroc": 0.50923,
+            "attacker_m2_auroc": 0.5651,
+            "overall_auroc": 0.51868
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.33437,
+              "ci95": [
+                0.18039,
+                0.51233
+              ]
+            },
+            "attacker_m1_auroc": 0.52766,
+            "attacker_m2_auroc": 0.65751,
+            "overall_auroc": 0.54645
+          }
+        },
+        "threshold_used": 0.399667
+      },
+      "lucia": {
+        "clean_fpr_overall": 0.0,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50532,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.5025
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50033,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50008
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50062,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50015
+          }
+        },
+        "threshold_used": 1.0
+      }
+    },
+    "m2_fpr_capped_5pct": {
+      "tier1_unified": {
+        "clean_fpr_overall": 0.17656,
+        "clean_fpr_m1": {
+          "val": 0.30312,
+          "ci95": [
+            0.0923,
+            0.49646
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.05,
+          "ci95": [
+            0.02119,
+            0.09428
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": -0.25312,
+          "diff_ci95": [
+            -0.41997,
+            -0.05838
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.87813,
+              "ci95": [
+                0.6534,
+                0.9886
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.90625,
+              "ci95": [
+                0.66543,
+                1.0
+              ]
+            },
+            "attacker_m1_auroc": 0.893,
+            "attacker_m2_auroc": 0.92947,
+            "overall_auroc": 0.91597
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.75938,
+              "ci95": [
+                0.5309,
+                0.91429
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.74687,
+              "ci95": [
+                0.52549,
+                0.91084
+              ]
+            },
+            "attacker_m1_auroc": 0.74266,
+            "attacker_m2_auroc": 0.85114,
+            "overall_auroc": 0.78939
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.95625,
+              "ci95": [
+                0.93651,
+                0.98099
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.92812,
+              "ci95": [
+                0.90804,
+                0.95475
+              ]
+            },
+            "attacker_m1_auroc": 0.93869,
+            "attacker_m2_auroc": 0.98489,
+            "overall_auroc": 0.95839
+          }
+        },
+        "threshold_m1": 3.26593,
+        "threshold_m2": 3.26593
+      },
+      "tier4_ours": {
+        "clean_fpr_overall": 0.05,
+        "clean_fpr_m1": {
+          "val": 0.05,
+          "ci95": [
+            0.01364,
+            0.08013
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.05,
+          "ci95": [
+            0.01139,
+            0.10901
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.0,
+          "diff_ci95": [
+            -0.05593,
+            0.07201
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.79375,
+              "ci95": [
+                0.56715,
+                0.94001
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.83437,
+              "ci95": [
+                0.62109,
+                0.96853
+              ]
+            },
+            "attacker_m1_auroc": 0.88697,
+            "attacker_m2_auroc": 0.91861,
+            "overall_auroc": 0.90684
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.7,
+              "ci95": [
+                0.42595,
+                0.8665
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.71562,
+              "ci95": [
+                0.46779,
+                0.87316
+              ]
+            },
+            "attacker_m1_auroc": 0.78783,
+            "attacker_m2_auroc": 0.83417,
+            "overall_auroc": 0.81195
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.62813,
+              "ci95": [
+                0.37343,
+                0.80526
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.54375,
+              "ci95": [
+                0.32484,
+                0.73459
+              ]
+            },
+            "attacker_m1_auroc": 0.85247,
+            "attacker_m2_auroc": 0.89853,
+            "overall_auroc": 0.86569
+          }
+        },
+        "threshold_m1": 0.948052,
+        "threshold_m2": 0.892017
+      },
+      "hetshield_shared": {
+        "clean_fpr_overall": 0.025,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.05,
+          "ci95": [
+            0.00357,
+            0.10105
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.05,
+          "diff_ci95": [
+            0.00357,
+            0.10105
+          ],
+          "significant_pos": true
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.975,
+              "ci95": [
+                0.96313,
+                0.98273
+              ]
+            },
+            "attacker_m1_auroc": 0.78173,
+            "attacker_m2_auroc": 0.97593,
+            "overall_auroc": 0.69569
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0625,
+              "ci95": [
+                0.00357,
+                0.14539
+              ]
+            },
+            "attacker_m1_auroc": 0.50923,
+            "attacker_m2_auroc": 0.5651,
+            "overall_auroc": 0.51868
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.14688,
+              "ci95": [
+                0.02594,
+                0.3276
+              ]
+            },
+            "attacker_m1_auroc": 0.52766,
+            "attacker_m2_auroc": 0.65751,
+            "overall_auroc": 0.54645
+          }
+        },
+        "threshold_m1": 0.437802,
+        "threshold_m2": 0.437802
+      },
+      "lucia": {
+        "clean_fpr_overall": 0.0,
+        "clean_fpr_m1": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_m2": {
+          "val": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ]
+        },
+        "clean_fpr_diff_m2_minus_m1": {
+          "diff": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "significant_pos": false
+        },
+        "attack_detection": {
+          "pgd_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50532,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.5025
+          },
+          "local_removal_1.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50033,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50008
+          },
+          "local_ghost_2.0sigma": {
+            "attacker_m1_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m2_tpr": {
+              "val": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ]
+            },
+            "attacker_m1_auroc": 0.50062,
+            "attacker_m2_auroc": 0.5,
+            "overall_auroc": 0.50015
+          }
+        },
+        "threshold_m1": 1.0,
+        "threshold_m2": 1.0
+      }
+    }
+  }
+}

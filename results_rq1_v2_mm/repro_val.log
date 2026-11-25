@@ -1,0 +1,171 @@
+[INFO] 运行设备: cuda
+[INFO] 已生成 opv2v_val 顺序模态分配: /root/autodl-tmp/proj_dir2_hetero_trust/tmp_png_ab_test/opv2v_val_4modality_in_order.json (6 序列)
+/root/miniconda3/lib/python3.8/site-packages/timm/models/layers/__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+Loaded pretrained weights for efficientnet-b0
+Align corners:  False
+=========Those modules have trainable component=========
+encoder_m2
+backbone_m2
+aligner_m2
+
+=========Those modules have untrainable component=========
+pyramid_backbone
+shrink_conv
+cls_head
+reg_head
+dir_head
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val
+too many cavs reinitialize
+len: 965
+too many cavs reinitialize
+len: 965
+
+[START] m2_alignto_m1/net_epoch25.pth mode=no range=102.4 frames=965 strict=<All keys matched successfully>
+  [no 102.4] 进度 200/965, 耗时 52.2s
+  [no 102.4] 进度 400/965, 耗时 92.2s
+  [no 102.4] 进度 600/965, 耗时 137.4s
+  [no 102.4] 进度 800/965, 耗时 190.2s
+  [no 102.4] 进度 965/965, 耗时 233.7s
+[DONE] no range=102.4: overall={'ap30': 0.29237181474282165, 'ap50': 0.23517766432196538, 'ap70': 0.15374186626220657, 'gt_total': 15505, 'pred_total': 7122}
+Loaded pretrained weights for efficientnet-b0
+Align corners:  False
+=========Those modules have trainable component=========
+encoder_m2
+backbone_m2
+aligner_m2
+
+=========Those modules have untrainable component=========
+pyramid_backbone
+shrink_conv
+cls_head
+reg_head
+dir_head
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val
+too many cavs reinitialize
+len: 965
+too many cavs reinitialize
+len: 965
+
+[START] m2_alignto_m1/net_epoch25.pth mode=single range=51.2 frames=965 strict=<All keys matched successfully>
+  [single 51.2] 进度 200/965, 耗时 57.1s
+  [single 51.2] 进度 400/965, 耗时 111.2s
+  [single 51.2] 进度 600/965, 耗时 161.6s
+  [single 51.2] 进度 800/965, 耗时 207.0s
+  [single 51.2] 进度 965/965, 耗时 242.4s
+[DONE] single range=51.2: overall={'ap30': 0.5341310485936891, 'ap50': 0.42995056302935114, 'ap70': 0.28090096609370396, 'gt_total': 8475, 'pred_total': 7024}
+Loaded pretrained weights for efficientnet-b0
+Align corners:  False
+=========Those modules have trainable component=========
+encoder_m2
+backbone_m2
+aligner_m2
+
+=========Those modules have untrainable component=========
+pyramid_backbone
+shrink_conv
+cls_head
+reg_head
+dir_head
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val
+too many cavs reinitialize
+len: 965
+too many cavs reinitialize
+len: 965
+
+[START] final_infer/net_epoch1.pth mode=no range=102.4 frames=965 strict=<All keys matched successfully>
+  [no 102.4] 进度 200/965, 耗时 48.7s
+  [no 102.4] 进度 400/965, 耗时 92.1s
+  [no 102.4] 进度 600/965, 耗时 139.5s
+  [no 102.4] 进度 800/965, 耗时 192.0s
+  [no 102.4] 进度 965/965, 耗时 237.2s
+[DONE] no range=102.4: overall={'ap30': 0.294543152661236, 'ap50': 0.23204295858049753, 'ap70': 0.14645150765666015, 'gt_total': 15505, 'pred_total': 8614}
+Loaded pretrained weights for efficientnet-b0
+Align corners:  False
+=========Those modules have trainable component=========
+encoder_m2
+backbone_m2
+aligner_m2
+
+=========Those modules have untrainable component=========
+pyramid_backbone
+shrink_conv
+cls_head
+reg_head
+dir_head
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val
+too many cavs reinitialize
+len: 965
+too many cavs reinitialize
+len: 965
+
+[START] final_infer/net_epoch1.pth mode=single range=51.2 frames=965 strict=<All keys matched successfully>
+  [single 51.2] 进度 200/965, 耗时 59.3s
+  [single 51.2] 进度 400/965, 耗时 115.0s
+  [single 51.2] 进度 600/965, 耗时 166.3s
+  [single 51.2] 进度 800/965, 耗时 211.1s
+  [single 51.2] 进度 965/965, 耗时 247.5s
+[DONE] single range=51.2: overall={'ap30': 0.538815893897959, 'ap50': 0.4241545619474533, 'ap70': 0.26793224055269904, 'gt_total': 8475, 'pred_total': 7617}
+Loaded pretrained weights for efficientnet-b0
+Align corners:  False
+=========Those modules have trainable component=========
+encoder_m1
+backbone_m1
+encoder_m2
+backbone_m2
+aligner_m2
+pyramid_backbone
+shrink_conv
+cls_head
+reg_head
+dir_head
+
+=========Those modules have untrainable component=========
+
+
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val
+too many cavs reinitialize
+len: 965
+too many cavs reinitialize
+len: 965
+
+
+Caution: make sure your sensor type is consistent with:
+{'m1': 'lidar', 'm2': 'camera', 'm3': 'lidar', 'm4': 'camera'}
+Otherwise, modify it in opencood/data_utils/datasets/heter_infer/intermediate_heter_infer_fusion_dataset.py
+
+
+
+[START] HeterPyramidCollab use_cav=1 frames=965 strict=<All keys matched successfully>
+  [collab use_cav=1] 进度 200/965, 耗时 41.6s
+  [collab use_cav=1] 进度 400/965, 耗时 81.9s
+  [collab use_cav=1] 进度 600/965, 耗时 130.5s
+  [collab use_cav=1] 进度 800/965, 耗时 197.6s
+  [collab use_cav=1] 进度 965/965, 耗时 253.6s
+[DONE] collab use_cav=1: {'ap30': 0.39937026048555524, 'ap50': 0.3899655718326288, 'ap70': 0.35269592431466024, 'gt_total': 25104, 'pred_total': 13722}
+Dataset dir: /root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val
+too many cavs reinitialize
+len: 965
+too many cavs reinitialize
+len: 965
+
+
+Caution: make sure your sensor type is consistent with:
+{'m1': 'lidar', 'm2': 'camera', 'm3': 'lidar', 'm4': 'camera'}
+Otherwise, modify it in opencood/data_utils/datasets/heter_infer/intermediate_heter_infer_fusion_dataset.py
+
+
+
+[START] HeterPyramidCollab use_cav=2 frames=965 strict=<All keys matched successfully>
+  [collab use_cav=2] 进度 200/965, 耗时 57.6s
+  [collab use_cav=2] 进度 400/965, 耗时 118.0s
+  [collab use_cav=2] 进度 600/965, 耗时 186.5s
+  [collab use_cav=2] 进度 800/965, 耗时 273.7s
+  [collab use_cav=2] 进度 965/965, 耗时 350.5s
+[DONE] collab use_cav=2: {'ap30': 0.5049250948115898, 'ap50': 0.48423223707106344, 'ap70': 0.42342952829571323, 'gt_total': 25104, 'pred_total': 20288}
+
+[ALL DONE] 完整复现报告已保存至 /root/autodl-tmp/proj_dir2_hetero_trust/results_rq1_v2_mm/heal_m2_official_repro_report.json，总耗时 1566.64s

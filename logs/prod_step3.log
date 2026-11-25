@@ -1,0 +1,12 @@
+[Step 3] Evaluating on 180 unseen OPV2V test frames across all 16 sequences (total=2170)...
+  Evaluated 25/180 test frames (416.7s)
+Traceback (most recent call last):
+  File "scripts/step3_evaluate_all.py", line 623, in <module>
+    main()
+  File "scripts/step3_evaluate_all.py", line 384, in main
+    z_wb_b = generate_whitebox_adaptive_attack(
+  File "/root/autodl-tmp/proj_dir2_hetero_trust/src/attacks.py", line 236, in generate_whitebox_adaptive_attack
+    z_fused, diag = bud_module.forward_fuse(
+  File "/root/autodl-tmp/proj_dir2_hetero_trust/src/uncertainty_fusion.py", line 331, in forward_fuse
+    cos_val = (z0_u * z_all_u).sum(dim=1, keepdim=True)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 258.00 MiB (GPU 0; 23.52 GiB total capacity; 6.28 GiB already allocated; 254.38 MiB free; 6.71 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

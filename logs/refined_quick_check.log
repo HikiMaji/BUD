@@ -1,0 +1,574 @@
+[Wed Nov 18 07:28:40 HKT 2026] Running refined Step 2 (260 train, 240 val)...
+[Step 2.1] Caching 260 benign heterogeneous frames from OPV2V train...
+  Calibrated benign_net_norm_99 = 9.069, benign_hf_99 = 3.973
+  [DUID Epoch 1/8] AleaLoss=0.0119 | SphereLoss=0.2257
+  [DUID Epoch 2/8] AleaLoss=0.0091 | SphereLoss=0.1849
+  [DUID Epoch 3/8] AleaLoss=0.0086 | SphereLoss=0.1837
+  [DUID Epoch 4/8] AleaLoss=0.0084 | SphereLoss=0.1836
+  [DUID Epoch 5/8] AleaLoss=0.0082 | SphereLoss=0.1833
+  [DUID Epoch 6/8] AleaLoss=0.0082 | SphereLoss=0.1834
+  [DUID Epoch 7/8] AleaLoss=0.0080 | SphereLoss=0.1835
+  [DUID Epoch 8/8] AleaLoss=0.0079 | SphereLoss=0.1832
+
+[Step 2.2] Calibrating thresholds on 240 independent OPV2V validate frames (alpha=0.05)...
+  Calibrated benign domain variances: {'profile_a_pp64': 0.005, 'profile_b_second64': 0.03905, 'profile_c_coarse32': 0.03268, 'profile_d_sparse16': 0.02893}
+
+[Step 2 Complete] Saved DUID checkpoint & frozen thresholds:
+{
+  "alpha_budget": 0.05,
+  "hetero_calibrated_95": {
+    "global_residual": 0.12993,
+    "robosac_full": 0.14297,
+    "robosac_vis_calib": 0.09742,
+    "ours_full": 3.21166,
+    "ours_no_alea": 5.05198,
+    "ours_no_epis": 2.12086,
+    "ours_quant95": 1.13003
+  },
+  "homo_calibrated_95": {
+    "global_residual": 0.07939,
+    "robosac_full": 0.09273,
+    "robosac_vis_calib": 0.0977
+  },
+  "bud_calib_params": {
+    "tau_frame": 3.21166,
+    "tau_grid": 0.71766,
+    "tau_epis": 0.26879,
+    "dom_var": {
+      "profile_a_pp64": 0.005,
+      "profile_b_second64": 0.03905,
+      "profile_c_coarse32": 0.03268,
+      "profile_d_sparse16": 0.02893
+    },
+    "tau_a": 0.1,
+    "tau_e": 1.0,
+    "lambda_m": 2.2,
+    "kappa": 8.0,
+    "beta_d": 4.5,
+    "beta_e": 6.0,
+    "beta_att": 1.2,
+    "theta_clear": 0.52,
+    "theta_reach": 0.78,
+    "r_near": 14.0,
+    "act_thresh": 2.0
+  }
+}
+[Wed Nov 18 07:44:44 HKT 2026] Running quick 18-frame check before full 150-frame run...
+[Step 3] Evaluating on 18 unseen OPV2V test frames across all 16 sequences (total=2170)...
+  Evaluated 18/18 test frames (127.7s)
+
+================ FINAL BENCHMARK SUMMARY ================
+{
+  "num_test_frames": 18,
+  "main_benchmark_ap": {
+    "clean": {
+      "ego_only": {
+        "AP50": 0.8031,
+        "AP70": 0.7233
+      },
+      "homo_64_oracle": {
+        "AP50": 0.946,
+        "AP70": 0.8988
+      },
+      "unconstrained_att": {
+        "AP50": 0.8987,
+        "AP70": 0.7639
+      },
+      "hetero_where2comm": {
+        "AP50": 0.9125,
+        "AP70": 0.8225
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.8755,
+        "AP70": 0.8078
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8517,
+        "AP70": 0.7699
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.9129,
+        "AP70": 0.8228
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.9129,
+        "AP70": 0.8228
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.873,
+        "AP70": 0.7782
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.9217,
+        "AP70": 0.8162
+      }
+    },
+    "pgd_removal": {
+      "ego_only": {
+        "AP50": 0.8031,
+        "AP70": 0.7233
+      },
+      "homo_64_oracle": {
+        "AP50": 0.946,
+        "AP70": 0.8988
+      },
+      "unconstrained_att": {
+        "AP50": 0.7372,
+        "AP70": 0.4911
+      },
+      "hetero_where2comm": {
+        "AP50": 0.5323,
+        "AP70": 0.277
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.6317,
+        "AP70": 0.4398
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.491,
+        "AP70": 0.2324
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.5306,
+        "AP70": 0.2757
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.5306,
+        "AP70": 0.2757
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.506,
+        "AP70": 0.2428
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.8065,
+        "AP70": 0.6311
+      }
+    },
+    "ghost_spoof": {
+      "ego_only": {
+        "AP50": 0.8031,
+        "AP70": 0.7233
+      },
+      "homo_64_oracle": {
+        "AP50": 0.946,
+        "AP70": 0.8988
+      },
+      "unconstrained_att": {
+        "AP50": 0.63,
+        "AP70": 0.5245
+      },
+      "hetero_where2comm": {
+        "AP50": 0.6291,
+        "AP70": 0.5526
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.6986,
+        "AP70": 0.6296
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8217,
+        "AP70": 0.7439
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.631,
+        "AP70": 0.554
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.8713,
+        "AP70": 0.7931
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.7791,
+        "AP70": 0.6967
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.6689,
+        "AP70": 0.5872
+      }
+    },
+    "hetpoison_transfer": {
+      "ego_only": {
+        "AP50": 0.8031,
+        "AP70": 0.7233
+      },
+      "homo_64_oracle": {
+        "AP50": 0.946,
+        "AP70": 0.8988
+      },
+      "unconstrained_att": {
+        "AP50": 0.8275,
+        "AP70": 0.7112
+      },
+      "hetero_where2comm": {
+        "AP50": 0.9115,
+        "AP70": 0.8316
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.874,
+        "AP70": 0.8024
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8676,
+        "AP70": 0.7863
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.9118,
+        "AP70": 0.8319
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.9118,
+        "AP70": 0.8319
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.8963,
+        "AP70": 0.8135
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.9085,
+        "AP70": 0.8177
+      }
+    },
+    "whitebox_adaptive": {
+      "ego_only": {
+        "AP50": 0.8031,
+        "AP70": 0.7233
+      },
+      "homo_64_oracle": {
+        "AP50": 0.946,
+        "AP70": 0.8988
+      },
+      "unconstrained_att": {
+        "AP50": 0.7071,
+        "AP70": 0.4624
+      },
+      "hetero_where2comm": {
+        "AP50": 0.4397,
+        "AP70": 0.2469
+      },
+      "homo_def_global_res_homo_th": {
+        "AP50": 0.8332,
+        "AP70": 0.7545
+      },
+      "homo_def_robosac_homo_th": {
+        "AP50": 0.8217,
+        "AP70": 0.7439
+      },
+      "hetero_def_global_res": {
+        "AP50": 0.8032,
+        "AP70": 0.7131
+      },
+      "hetero_def_robosac_full": {
+        "AP50": 0.8536,
+        "AP70": 0.7711
+      },
+      "hetero_def_robosac_vis": {
+        "AP50": 0.8314,
+        "AP70": 0.7531
+      },
+      "ours_bud_fusion": {
+        "AP50": 0.8571,
+        "AP70": 0.7701
+      }
+    }
+  },
+  "quarantine_and_suppression": {
+    "homo_def_global_res_homo_th": {
+      "BFQR_benign_false_quarantine_rate": 0.4615,
+      "MSR_malicious_suppression_rate": 0.6029,
+      "benign_N": 26,
+      "atk_N": 68
+    },
+    "homo_def_robosac_homo_th": {
+      "BFQR_benign_false_quarantine_rate": 0.1923,
+      "MSR_malicious_suppression_rate": 0.5147,
+      "benign_N": 26,
+      "atk_N": 68
+    },
+    "hetero_def_global_res": {
+      "BFQR_benign_false_quarantine_rate": 0.0,
+      "MSR_malicious_suppression_rate": 0.2353,
+      "benign_N": 26,
+      "atk_N": 68
+    },
+    "hetero_def_robosac_full": {
+      "BFQR_benign_false_quarantine_rate": 0.0,
+      "MSR_malicious_suppression_rate": 0.4853,
+      "benign_N": 26,
+      "atk_N": 68
+    },
+    "hetero_def_robosac_vis": {
+      "BFQR_benign_false_quarantine_rate": 0.1154,
+      "MSR_malicious_suppression_rate": 0.4559,
+      "benign_N": 26,
+      "atk_N": 68
+    },
+    "ours_bud_fusion": {
+      "BFQR_benign_false_quarantine_rate": 0.0,
+      "MSR_malicious_suppression_rate": 0.3088,
+      "benign_N": 26,
+      "atk_N": 68
+    }
+  },
+  "detector_hetero_auroc": {
+    "robosac_full": 0.5419,
+    "global_res": 0.526,
+    "ours_s_frame": 0.638
+  },
+  "ablation_study_ap": {
+    "clean": {
+      "ours_full": {
+        "AP50": 0.9149,
+        "AP70": 0.8014
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.8354,
+        "AP70": 0.7525
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.9072,
+        "AP70": 0.7631
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.9022,
+        "AP70": 0.8033
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.9153,
+        "AP70": 0.8056
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.9099,
+        "AP70": 0.8049
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.9155,
+        "AP70": 0.7888
+      }
+    },
+    "pgd_removal": {
+      "ours_full": {
+        "AP50": 0.7909,
+        "AP70": 0.6017
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.8171,
+        "AP70": 0.6911
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.7094,
+        "AP70": 0.5208
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.7979,
+        "AP70": 0.6421
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.6393,
+        "AP70": 0.4055
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.7909,
+        "AP70": 0.6019
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.7545,
+        "AP70": 0.5386
+      }
+    },
+    "ghost_spoof": {
+      "ours_full": {
+        "AP50": 0.6501,
+        "AP70": 0.5646
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.6811,
+        "AP70": 0.6033
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.6382,
+        "AP70": 0.5215
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.8039,
+        "AP70": 0.7196
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.6253,
+        "AP70": 0.5347
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.6433,
+        "AP70": 0.556
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.6625,
+        "AP70": 0.5702
+      }
+    },
+    "hetpoison_transfer": {
+      "ours_full": {
+        "AP50": 0.901,
+        "AP70": 0.8033
+      },
+      "ablation_unconstrained_adapter": {
+        "AP50": 0.783,
+        "AP70": 0.6912
+      },
+      "ablation_raw_grid_count_c1": {
+        "AP50": 0.9009,
+        "AP70": 0.7708
+      },
+      "ablation_no_aleatoric_calib": {
+        "AP50": 0.9012,
+        "AP70": 0.8225
+      },
+      "ablation_no_spherical_epis": {
+        "AP50": 0.9096,
+        "AP70": 0.8147
+      },
+      "ablation_quantile95_c3": {
+        "AP50": 0.9049,
+        "AP70": 0.8193
+      },
+      "ablation_unbounded_dot_att": {
+        "AP50": 0.8987,
+        "AP70": 0.7981
+      }
+    }
+  },
+  "objective_point_strata": {
+    "clean": {
+      "ego_only": {
+        "clear_recall": 0.9752,
+        "clear_gt": 161,
+        "sparse_recall": 0.6863,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.037,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.8578,
+        "false_positives": 32
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.9752,
+        "clear_gt": 161,
+        "sparse_recall": 0.8627,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.9259,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.6384,
+        "false_positives": 128
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.9752,
+        "clear_gt": 161,
+        "sparse_recall": 0.7647,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.7407,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.6448,
+        "false_positives": 119
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9814,
+        "clear_gt": 161,
+        "sparse_recall": 0.902,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.9259,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.6479,
+        "false_positives": 125
+      }
+    },
+    "ghost_spoof": {
+      "ego_only": {
+        "clear_recall": 0.9752,
+        "clear_gt": 161,
+        "sparse_recall": 0.6863,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.037,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.8578,
+        "false_positives": 32
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.9752,
+        "clear_gt": 161,
+        "sparse_recall": 0.8627,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.9259,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.5,
+        "false_positives": 226
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.9814,
+        "clear_gt": 161,
+        "sparse_recall": 0.7059,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.4074,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.7168,
+        "false_positives": 81
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9814,
+        "clear_gt": 161,
+        "sparse_recall": 0.902,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.9259,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.5324,
+        "false_positives": 202
+      }
+    },
+    "pgd_removal": {
+      "ego_only": {
+        "clear_recall": 0.9752,
+        "clear_gt": 161,
+        "sparse_recall": 0.6863,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.037,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.8578,
+        "false_positives": 32
+      },
+      "unconstrained_att": {
+        "clear_recall": 0.8696,
+        "clear_gt": 161,
+        "sparse_recall": 0.6275,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.6296,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.6038,
+        "false_positives": 124
+      },
+      "hetero_def_robosac_vis": {
+        "clear_recall": 0.7329,
+        "clear_gt": 161,
+        "sparse_recall": 0.5294,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.2222,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.4824,
+        "false_positives": 162
+      },
+      "ours_bud_fusion": {
+        "clear_recall": 0.9503,
+        "clear_gt": 161,
+        "sparse_recall": 0.7059,
+        "sparse_gt": 51,
+        "blind_occluded_recall": 0.4444,
+        "blind_occluded_gt": 27,
+        "precision_proxy": 0.658,
+        "false_positives": 105
+      }
+    }
+  },
+  "mean_fusion_head_latency_ms": {
+    "unconstrained_att": 1.48,
+    "hetero_def_robosac_vis": 3.99,
+    "ours_bud_fusion": 7.33
+  }
+}
+[Wed Nov 18 07:47:05 HKT 2026] QUICK_CHECK_DONE

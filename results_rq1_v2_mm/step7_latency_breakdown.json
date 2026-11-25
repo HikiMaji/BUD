@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "description": "步骤 ⑦ 单帧推理耗时拆解（CUDA Event 精确计时，10 帧预热后统计）",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "warmup_frames": 10,
+    "measured_frames": 100,
+    "hetshield_weights_loaded": true,
+    "elapsed_sec": 187.65,
+    "git_commit": "b00a36e2ec7ead8a1f413175f92ac1a61bacdc10",
+    "git_short": "b00a36e",
+    "git_branch": "master",
+    "git_dirty_at_write": false
+  },
+  "latency_ms": {
+    "overall": {
+      "bud_vis_bin": {
+        "n": 100,
+        "mean_ms": 2.338,
+        "median_ms": 2.181,
+        "p95_ms": 3.003
+      },
+      "bud_audit_dev": {
+        "n": 100,
+        "mean_ms": 40.67,
+        "median_ms": 41.365,
+        "p95_ms": 47.123
+      },
+      "bud_gate_build": {
+        "n": 100,
+        "mean_ms": 3.935,
+        "median_ms": 3.713,
+        "p95_ms": 5.609
+      },
+      "bud_gated_fuse_head": {
+        "n": 100,
+        "mean_ms": 22.947,
+        "median_ms": 22.957,
+        "p95_ms": 25.207
+      },
+      "bud_receiver_total": {
+        "n": 100,
+        "mean_ms": 69.89,
+        "median_ms": 70.195,
+        "p95_ms": 79.292
+      },
+      "no_defense_total": {
+        "n": 100,
+        "mean_ms": 21.79,
+        "median_ms": 21.671,
+        "p95_ms": 23.428
+      },
+      "hetshield_total": {
+        "n": 100,
+        "mean_ms": 24.473,
+        "median_ms": 24.737,
+        "p95_ms": 27.735
+      },
+      "lucia_total": {
+        "n": 100,
+        "mean_ms": 22.382,
+        "median_ms": 22.809,
+        "p95_ms": 24.724
+      },
+      "robosac_total": {
+        "n": 86,
+        "mean_ms": 190.886,
+        "median_ms": 147.148,
+        "p95_ms": 403.68
+      }
+    },
+    "collab_1": {
+      "bud_vis_bin": {
+        "n": 14,
+        "mean_ms": 2.159,
+        "median_ms": 2.021,
+        "p95_ms": 2.755
+      },
+      "bud_audit_dev": {
+        "n": 14,
+        "mean_ms": 26.458,
+        "median_ms": 25.534,
+        "p95_ms": 28.973
+      },
+      "bud_gate_build": {
+        "n": 14,
+        "mean_ms": 2.203,
+        "median_ms": 1.967,
+        "p95_ms": 2.844
+      },
+      "bud_gated_fuse_head": {
+        "n": 14,
+        "mean_ms": 17.198,
+        "median_ms": 16.971,
+        "p95_ms": 18.369
+      },
+      "bud_receiver_total": {
+        "n": 14,
+        "mean_ms": 48.018,
+        "median_ms": 47.315,
+        "p95_ms": 52.276
+      },
+      "no_defense_total": {
+        "n": 14,
+        "mean_ms": 15.728,
+        "median_ms": 15.669,
+        "p95_ms": 16.481
+      },
+      "hetshield_total": {
+        "n": 14,
+        "mean_ms": 17.896,
+        "median_ms": 17.633,
+        "p95_ms": 19.507
+      },
+      "lucia_total": {
+        "n": 14,
+        "mean_ms": 16.845,
+        "median_ms": 16.487,
+        "p95_ms": 18.104
+      },
+      "robosac_total": {
+        "n": 0,
+        "mean_ms": 0.0,
+        "median_ms": 0.0,
+        "p95_ms": 0.0
+      }
+    },
+    "collab_2": {
+      "bud_vis_bin": {
+        "n": 86,
+        "mean_ms": 2.368,
+        "median_ms": 2.183,
+        "p95_ms": 3.003
+      },
+      "bud_audit_dev": {
+        "n": 86,
+        "mean_ms": 42.984,
+        "median_ms": 41.587,
+        "p95_ms": 47.137
+      },
+      "bud_gate_build": {
+        "n": 86,
+        "mean_ms": 4.217,
+        "median_ms": 3.783,
+        "p95_ms": 5.646
+      },
+      "bud_gated_fuse_head": {
+        "n": 86,
+        "mean_ms": 23.883,
+        "median_ms": 23.026,
+        "p95_ms": 25.223
+      },
+      "bud_receiver_total": {
+        "n": 86,
+        "mean_ms": 73.451,
+        "median_ms": 70.587,
+        "p95_ms": 79.71
+      },
+      "no_defense_total": {
+        "n": 86,
+        "mean_ms": 22.777,
+        "median_ms": 21.745,
+        "p95_ms": 23.431
+      },
+      "hetshield_total": {
+        "n": 86,
+        "mean_ms": 25.544,
+        "median_ms": 24.854,
+        "p95_ms": 27.794
+      },
+      "lucia_total": {
+        "n": 86,
+        "mean_ms": 23.283,
+        "median_ms": 22.873,
+        "p95_ms": 24.732
+      },
+      "robosac_total": {
+        "n": 86,
+        "mean_ms": 190.886,
+        "median_ms": 147.148,
+        "p95_ms": 403.68
+      }
+    }
+  }
+}
