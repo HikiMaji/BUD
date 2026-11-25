@@ -57,3 +57,6 @@ __pycache__/
 *.tmp
 *.swp
 .DS_Store
+
+# 个人开题问答与答辩辅助笔记（仅本地保留，不上传）
+docs/guide_*.md
