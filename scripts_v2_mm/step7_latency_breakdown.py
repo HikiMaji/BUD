@@ -113,7 +113,7 @@ def main():
 
     # 加载 HetShield（若已训练则加载权重，否则用随机权重测纯计算耗时并标注）
     hs_loaded = False
-    hs_def = HetShieldHEALDefender(mode="shared", alpha=0.5, tau_th=0.3, temperature=0.1).cuda().eval()
+    hs_def = HetShieldHEALDefender(mode="shared", alpha=0.6, tau_th=0.3, temperature=0.1).cuda().eval()
     if os.path.exists(args.hetshield_calib_json):
         with open(args.hetshield_calib_json, "r", encoding="utf-8") as f:
             hc = json.load(f)

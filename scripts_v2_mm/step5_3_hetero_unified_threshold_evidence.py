@@ -311,8 +311,9 @@ def main():
         auditor = BUDFusionHEALAuditor(args.base_calib_json, gating_calib_path=args.frozen_gating_json)
         vis_v2 = (auditor.gating_calib or {}).get("visibility_v2", None)
 
+        alpha_hs = float(hs_cfg.get("paper_default_params", {}).get("alpha", 0.6))
         hs_shared = HetShieldHEALDefender(
-            mode="shared", alpha=0.5, tau_th=0.3, temperature=0.1,
+            mode="shared", alpha=alpha_hs, tau_th=0.3, temperature=0.1,
             energy_thresh=float(hs_cfg["meta"]["energy_thresh"]),
         ).cuda().eval()
         hs_shared.predictor.load_state_dict(torch.load(hs_cfg["meta"]["shared_ckpt"], map_location="cpu"))

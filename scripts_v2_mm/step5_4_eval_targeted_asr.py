@@ -140,10 +140,11 @@ def _load_hs_defenders(hs_calib_json: str, device: str = "cuda") -> dict:
     e_th = float(cfg["meta"]["energy_thresh"])
     sd = torch.load(cfg["meta"]["shared_ckpt"], map_location="cpu")
 
-    hs_paper = HetShieldHEALDefender(mode="shared", alpha=0.5, tau_th=0.3, temperature=0.1, energy_thresh=e_th).to(device).eval()
+    alpha_hs = float(cfg.get("paper_default_params", {}).get("alpha", 0.6))
+    hs_paper = HetShieldHEALDefender(mode="shared", alpha=alpha_hs, tau_th=0.3, temperature=0.1, energy_thresh=e_th).to(device).eval()
     hs_paper.predictor.load_state_dict(sd)
     hs_tuned = HetShieldHEALDefender(
-        mode="shared", alpha=0.5, tau_th=float(cfg["fit_tuned_shared_tau_p95"]), temperature=0.1, energy_thresh=e_th
+        mode="shared", alpha=alpha_hs, tau_th=float(cfg["fit_tuned_shared_tau_p95"]), temperature=0.1, energy_thresh=e_th
     ).to(device).eval()
     hs_tuned.predictor.load_state_dict(sd)
     return {"hetshield_paper": hs_paper, "hetshield_tuned": hs_tuned}

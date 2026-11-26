@@ -102,12 +102,13 @@ class HetShieldHEALDefender(nn.Module):
         mode: str = "shared",
         in_channels: int = 64,
         hidden_channels: int = 64,
-        alpha: float = 0.5,
+        alpha: float = 0.6,
         tau_th: float = 0.3,
         temperature: float = 0.1,
         energy_thresh: float = 0.5,
         min_overlap_ratio: float = 0.05,
         per_sensor_tau: Optional[Dict[str, float]] = None,
+        freeze_on_quarantine: bool = False,
     ):
         super().__init__()
         assert mode in ("shared", "persensor"), f"未知模式: {mode}"
@@ -118,6 +119,7 @@ class HetShieldHEALDefender(nn.Module):
         self.kappa = 1.0 / self.temperature
         self.energy_thresh = float(energy_thresh)
         self.min_overlap_ratio = float(min_overlap_ratio)
+        self.freeze_on_quarantine = bool(freeze_on_quarantine)
         self.per_sensor_tau = dict(per_sensor_tau) if per_sensor_tau is not None else {"m1": float(tau_th), "m2": float(tau_th)}
 
         if mode == "shared":
@@ -253,8 +255,8 @@ class HetShieldHEALDefender(nn.Module):
             })
 
             if update_state:
-                # 仅用当前帧特征向前滚动一步生成供下一帧 (t+1) 使用的预测（若被隔离则不污染隐状态）
-                if not is_q or st["h"] is None:
+                # F-P0.3 & A2 修复：默认被隔离时也正常推进隐状态（freeze_on_quarantine=False），消除长序列隐状态锁死
+                if (not self.freeze_on_quarantine) or (not is_q) or st["h"] is None:
                     net = self._get_net(mod)
                     pred_next, h_next = net(f_cav, st["h"])
                     self._cav_states[cid] = {
@@ -270,11 +272,71 @@ class HetShieldHEALDefender(nn.Module):
 
 def build_hetshield_fuse_fn(g_list: Sequence[float], device: str = "cuda"):
     """
-    将 HetShield 输出的每辆协作者标量信任门 g_k ∈ [0, 1] 嵌入 HEAL 多尺度融合，
-    向本车拉回（削减份额无损回流给本车），支持单协作者与多车队。
+    A2 严格按 HetShield 原论文复现特征混合缓解（而非直接缩放融合权重）：
+    在本车 ego 对齐空间中，将每辆协作车特征按信任门 g_k 往本车特征 z_0 方向线性混合：
+        z_tilde_k = g_k * z_k + (1 - g_k) * z_0
+    再通过该尺度原生 single_head 重新计算混合特征对应的占用分数，并执行标准加权融合。
     """
-    gates = [
-        torch.full((1, 1, 256, 256), float(max(0.0, min(1.0, g))), device=device, dtype=torch.float32)
-        for g in g_list
-    ]
-    return build_gated_fuse_fn(torch.cat(gates, dim=0))
+    from opencood.models.fuse_modules.fusion_in_one import regroup
+    from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
+
+    g_clamped = [float(max(0.0, min(1.0, g))) for g in g_list]
+
+    def _hs_feature_mix_fuse(
+        feature_list,
+        score_list,
+        occ_map_list,
+        record_len,
+        affine_matrix,
+        agent_modality_list,
+        wrapper,
+    ):
+        pyramid = wrapper.model.pyramid_backbone
+        align_corners = pyramid.align_corners
+        num_levels = len(feature_list)
+        fused_feature_list = []
+
+        for lvl in range(num_levels):
+            x = feature_list[lvl]
+            score = score_list[lvl]
+            _, _, h, w = x.shape
+            batch_size = affine_matrix.shape[0]
+            split_x = regroup(x, record_len)
+            split_score = regroup(score, record_len)
+            single_head = getattr(pyramid, f"single_head_{lvl}", None)
+            out_b = []
+
+            for b in range(batch_size):
+                n_cav = int(record_len[b].item()) if torch.is_tensor(record_len[b]) else int(record_len[b])
+                t_mat = affine_matrix[b, 0, :n_cav, :, :]
+                feat_ego = warp_affine_simple(split_x[b], t_mat, (h, w), align_corners=align_corners)
+                score_ego = warp_affine_simple(split_score[b], t_mat, (h, w), align_corners=align_corners)
+
+                if n_cav > 1:
+                    if len(g_clamped) == 1 and n_cav - 1 > 1:
+                        gs = g_clamped * (n_cav - 1)
+                    else:
+                        gs = g_clamped[: n_cav - 1]
+                    g_vec = torch.tensor(gs, device=feat_ego.device, dtype=feat_ego.dtype).view(n_cav - 1, 1, 1, 1)
+                    z0 = feat_ego[0:1]
+                    # 原论文公式：z_tilde_k = g_k * z_k + (1 - g_k) * z_0（仅在协作者有效传输域内生效）
+                    valid_k = score_ego[1:] > 0.0
+                    z_collab_mix = g_vec * feat_ego[1:] + (1.0 - g_vec) * z0
+                    feat_ego = torch.cat([z0, z_collab_mix], dim=0)
+                    if single_head is not None:
+                        occ_mix = single_head(z_collab_mix)
+                        sc_mix = (torch.sigmoid(occ_mix) + 1e-4) * valid_k.to(feat_ego.dtype)
+                        score_ego = torch.cat([score_ego[0:1], sc_mix], dim=0)
+
+                valid = score_ego > 0.0
+                any_valid = valid.any(dim=0, keepdim=True)
+                safe_logits = torch.where(valid, score_ego, torch.full_like(score_ego, -1e4))
+                safe_logits = torch.where(any_valid, safe_logits, torch.zeros_like(safe_logits))
+                weights = torch.softmax(safe_logits, dim=0) * any_valid.to(score_ego.dtype)
+                out_b.append(torch.sum(feat_ego * weights, dim=0))
+
+            fused_feature_list.append(torch.stack(out_b, dim=0))
+
+        return fused_feature_list, {"hetshield_g_list": g_clamped}
+
+    return _hs_feature_mix_fuse
