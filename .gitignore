@@ -60,3 +60,11 @@ __pycache__/
 
 # 个人开题问答与答辩辅助笔记（仅本地保留，不上传）
 docs/guide_*.md
+
+# === 根目录本地代理/网络工具杂散文件（严禁上传密钥） ===
+/config.yaml
+/Country.mmdb
+/geoip.metadb
+/geosite.dat
+results_v3/*_cache/
+results_v3/final_opv2v_test_once/cache_*/
