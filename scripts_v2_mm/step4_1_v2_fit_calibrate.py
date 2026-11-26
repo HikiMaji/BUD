@@ -45,9 +45,9 @@ from src_v2_mm.step4_1_v2_core import (
     find_exact_fpr_threshold,
 )
 
-OUT_DIR = os.path.join(CORE_ROOT, "results_rq1_v2_mm")
-OUT_SPLIT = os.path.join(OUT_DIR, "step4_1_v2_split_plan.json")
-OUT_CALIB = os.path.join(OUT_DIR, "step4_1_v2_frozen_calibrator.json")
+OUT_DIR = os.path.join(CORE_ROOT, "results_v3")
+OUT_SPLIT = os.path.join(CORE_ROOT, "results_rq1_v2_mm", "step4_1_v2_split_plan.json")
+OUT_CALIB = os.path.join(OUT_DIR, "a1_fit_base_calibrator.json")
 
 FIT_ATTACKS = [
     "scaled_pgd_0.5sigma",
@@ -77,16 +77,16 @@ def _summarize_1d(arr: np.ndarray) -> dict:
 
 
 def compute_pixel_tier_stats(fit_clean_records: list) -> dict:
-    """在 Fit-100 全量有效像素上统计 4 通道在 4 个门限层级下的中位与高分位基准。"""
+    """在 Fit 有效像素上统计 4 通道在 4 个门限层级下的中位与高分位基准（m1 用完整覆盖区，m2 用相机覆盖区，统一新版 v_idx）。"""
     pix = {c: {"unified": [], "m1": [], "m2": []} for c in CHANNEL_NAMES}
     d_list = {"m1": [], "m2": []}
     v_list = {"m1": [], "m2": []}
 
     for rec in fit_clean_records:
-        cov = rec["cov_2d"]
-        d_np = rec["d_idx"][cov].numpy()
-        v_np = rec["v_idx"][cov].numpy()
         for mod in ("m1", "m2"):
+            cov = rec["cov_by_mod"][mod]
+            d_np = rec["d_idx"][cov].numpy()
+            v_np = rec["v_idx"][cov].numpy()
             dev = rec[mod]  # CPU float32 (4, 256, 256)
             d_list[mod].append(d_np)
             v_list[mod].append(v_np)
@@ -469,20 +469,22 @@ def main():
         is_dev = idx in fit_dev_set
         is_ho = not is_dev
 
-        cov_2d_cpu = b["cov_ego"][0, 0].detach().cpu()
+        cov_m1_cpu = b["cov_ego_m1_full"][0, 0].detach().cpu()
+        cov_m2_cpu = b["cov_ego"][0, 0].detach().cpu()
+        cov_by_mod_cpu = {"m1": cov_m1_cpu, "m2": cov_m2_cpu}
         d_cpu = b["d_idx"].detach().cpu()
         v_cpu = b["v_idx"].detach().cpu()
 
         fit_clean_records.append({
             "sample_idx": idx,
-            "cov_2d": cov_2d_cpu,
+            "cov_by_mod": cov_by_mod_cpu,
             "d_idx": d_cpu,
             "v_idx": v_cpu,
             "m1": b["dev_clean"]["m1"].detach().cpu(),
             "m2": b["dev_clean"]["m2"].detach().cpu(),
         })
         for mod in ("m1", "m2"):
-            fit_clean_meta.append({"sample_idx": idx, "mod": mod, "is_holdout": is_ho, "cov_2d": cov_2d_cpu, "d_idx": d_cpu, "v_idx": v_cpu})
+            fit_clean_meta.append({"sample_idx": idx, "mod": mod, "is_holdout": is_ho, "cov_2d": cov_by_mod_cpu[mod], "d_idx": d_cpu, "v_idx": v_cpu})
             fit_clean_devs.append(b["dev_clean"][mod].detach().cpu())
 
         if is_dev:
@@ -492,7 +494,9 @@ def main():
                 amat = p_dict["affine_matrix"]
                 mods = p_dict["agent_modality_list"]
                 vmask = p_dict["cam_valid_mask"]
-                preg = b["cov_local_m1"] if mod == "m1" else None
+                # 主实验规范：m1 使用自身完整覆盖范围且不限制攻击区 (preg=None)
+                cov_4d_mod = b["cov_ego_m1_full"] if mod == "m1" else b["cov_ego"]
+                preg = None
 
                 f_05, st_05 = generate_scaled_pgd_removal_heal(wrapper, feat, rlen, amat, mods, vmask, 1, 0.5, 10, preg)
                 f_10, st_10 = generate_scaled_pgd_removal_heal(wrapper, feat, rlen, amat, mods, vmask, 1, 1.0, 10, preg)
@@ -521,13 +525,13 @@ def main():
                         fit_atk_eff[mod][aname]["valid"] += 1
                         fit_atk_eff[mod][aname]["linf"].append(float(st.get("linf_max", 0.0)))
 
-                    dev_a = compute_dev_maps_from_protocol(wrapper, p_dict, f_adv, b["p_ego_cls"], b["cov_ego"]).detach().cpu()
+                    dev_a = compute_dev_maps_from_protocol(wrapper, p_dict, f_adv, b["p_ego_cls"], cov_4d_mod).detach().cpu()
                     fit_dev_atk_meta.append({
                         "sample_idx": idx,
                         "mod": mod,
                         "attack": aname,
                         "valid": is_val,
-                        "cov_2d": cov_2d_cpu,
+                        "cov_2d": cov_by_mod_cpu[mod],
                         "d_idx": d_cpu,
                         "v_idx": v_cpu,
                     })

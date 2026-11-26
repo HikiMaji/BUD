@@ -341,20 +341,13 @@ def main():
 
         # Part 1: 2 车成对 (clean + 3 攻击 × m1/m2)
         for fi, idx in enumerate(idxs):
-            b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+            c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else 73.853
+            l_tau = float(vis_v2.get("los_occ_tau", 0.50)) if vis_v2 is not None else 0.50
+            b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
+            # 动机实验（表 2 跨模态校准对比）：显式保留共同视野 cov_ego 与 dev_clean_common，确保差异纯来自传感器本身
             cov_2d = b["cov_ego"][0, 0]
             d_idx = b["d_idx"]
-            if vis_v2 is not None:
-                ego_pts = load_ego_lidar_np(ds_m1, idx)
-                _, los_f, exp_pts = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)
-                _, v_4d = assign_dist5_vis3_indices_v2(
-                    b["dist_cav"], los_f, exp_pts,
-                    clear_pts_tau=float(vis_v2["clear_pts_tau"]),
-                    los_occ_tau=float(vis_v2.get("los_occ_tau", 0.50)),
-                )
-                v_idx = v_4d[0, 0]
-            else:
-                v_idx = b["v_idx"]
+            v_idx = b["v_idx"]
 
             for mod, p_dict, ds_ref in (("m1", b["p1"], ds_m1), ("m2", b["p2"], ds_m2)):
                 feat = p_dict["heter_feature_2d"]
@@ -378,7 +371,7 @@ def main():
                     "local_ghost_2.0sigma": f_lg,
                 }
                 for st_name, f_cur in feat_map.items():
-                    dev_4 = b["dev_clean"][mod] if st_name == "clean" else compute_dev_maps_from_protocol(wrapper, p_dict, f_cur, b["p_ego_cls"], b["cov_ego"])
+                    dev_4 = b["dev_clean_common"][mod] if st_name == "clean" else compute_dev_maps_from_protocol(wrapper, p_dict, f_cur, b["p_ego_cls"], b["cov_ego"])
                     sc_t1 = compute_raw_frame_score_from_dev(
                         dev_4, cov_2d, d_idx, v_idx, mod, auditor.stats, "tier1_unified", auditor.main_cfg, "main_ms_cos_clear_sem"
                     )

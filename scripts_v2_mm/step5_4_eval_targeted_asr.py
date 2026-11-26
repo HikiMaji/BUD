@@ -53,12 +53,13 @@ from src_v2_mm.heal_attacks import (
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
 from src_v2_mm.hetshield_heal import HetShieldHEALDefender, build_hetshield_fuse_fn
 from src_v2_mm.step4_1_v2_core import (
+    DEFAULT_CLEAR_PTS_TAU,
+    DEFAULT_LOS_OCC_TAU,
     GRID_RES,
     MIN_XY,
     PROTO_H,
     PROTO_W,
     TRAIN_FULL19_DIR,
-    assign_dist5_vis3_indices,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
     compute_ego_expected_pts_and_los_256,
@@ -339,21 +340,14 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
 
     # === Part 1: 2 车跨模态异构对（1 本车 m1 + 1 协作者 m1/m2） ===
     for fi, idx in enumerate(idxs):
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+        c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
+        l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         raw_b1 = train_utils.to_device(ds_m1.collate_batch_test([ds_m1[idx]]), "cpu")
         b_post = train_utils.to_device(_slim_batch_for_postprocess(raw_b1), wrapper.device_obj)
-        ego_pts = load_ego_lidar_np(ds_m1, idx)
-        sigma_alea, los_f, exp_pts = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)
-        if vis_v2 is not None:
-            d_4d, v_4d = assign_dist5_vis3_indices_v2(
-                b["dist_cav"], los_f, exp_pts,
-                clear_pts_tau=float(vis_v2["clear_pts_tau"]),
-                los_occ_tau=float(vis_v2.get("los_occ_tau", 0.50)),
-            )
-            d_2d, v_2d = d_4d[0, 0], v_4d[0, 0]
-        else:
-            d_2d, v_2d = b["d_idx"], b["v_idx"]
-        occ_mask_4d = (los_f < float(vis_v2.get("los_occ_tau", 0.50)) if vis_v2 else (b["v_idx"] == 2)).float().view(1, 1, PROTO_H, PROTO_W)
+        d_2d, v_2d = b["d_idx"], b["v_idx"]
+        los_f, exp_pts = b["los_factor"], b["expected_pts"]
+        occ_mask_4d = (los_f < l_tau).float().view(1, 1, PROTO_H, PROTO_W)
 
         for mod, p_dict, ds_ref in (("m1", b["p1"], ds_m1), ("m2", b["p2"], ds_m2)):
             feat = p_dict["heter_feature_2d"]
@@ -361,7 +355,8 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
             amat = p_dict["affine_matrix"]
             mods_l = list(p_dict["agent_modality_list"])
             vmask = p_dict["cam_valid_mask"]
-            preg = b["cov_local_m1"] if mod == "m1" else None
+            # 主实验威胁模型：单协作车 m1 使用自身完整激光雷达范围，不限制攻击区
+            preg = None
 
             # 干净融合基准框（用于验证被攻击真车原本可检出、伪造空地原本无框）
             with torch.no_grad():
@@ -439,14 +434,7 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
             for ci in range(1, n_tot):
                 ptm_ci = raw_m["ego"]["pairwise_t_matrix"][0, ci, 0].detach().cpu().numpy()
                 dist_ci = torch.sqrt((gx - float(ptm_ci[0, 3])) ** 2 + (gy - float(ptm_ci[1, 3])) ** 2).view(1, 1, PROTO_H, PROTO_W)
-                if vis_v2 is not None:
-                    di, vi = assign_dist5_vis3_indices_v2(
-                        dist_ci, los_f, exp_pts,
-                        clear_pts_tau=float(vis_v2["clear_pts_tau"]),
-                        los_occ_tau=float(vis_v2.get("los_occ_tau", 0.50)),
-                    )
-                else:
-                    di, vi = assign_dist5_vis3_indices(dist_ci, sigma_alea)
+                di, vi = assign_dist5_vis3_indices_v2(dist_ci, los_f, exp_pts, clear_pts_tau=c_tau, los_occ_tau=l_tau)
                 per_d[ci], per_v[ci] = di[0, 0], vi[0, 0]
 
             with torch.no_grad():

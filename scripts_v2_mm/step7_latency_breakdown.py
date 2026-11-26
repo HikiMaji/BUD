@@ -37,13 +37,13 @@ from src_v2_mm.bud_fusion_heal import (
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
 from src_v2_mm.hetshield_heal import HetShieldHEALDefender, build_hetshield_fuse_fn
 from src_v2_mm.step4_1_v2_core import (
+    DEFAULT_CLEAR_PTS_TAU,
+    DEFAULT_LOS_OCC_TAU,
     PROTO_H,
     PROTO_W,
     TRAIN_FULL19_DIR,
-    assign_dist5_vis3_indices,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
-    compute_ego_beam_visibility_256,
     compute_ego_expected_pts_and_los_256,
     load_ego_lidar_np,
 )
@@ -169,13 +169,9 @@ def main():
                 ptm = raw_b["ego"]["pairwise_t_matrix"][0, ci, 0]
                 cx, cy = float(ptm[0, 3].item()), float(ptm[1, 3].item())
                 dist_ci = torch.sqrt((gx - cx) ** 2 + (gy - cy) ** 2).view(1, 1, PROTO_H, PROTO_W)
-                if vis_v2 is not None:
-                    di, vi = assign_dist5_vis3_indices_v2(
-                        dist_ci, lf, ep, clear_pts_tau=float(vis_v2["clear_pts_tau"]),
-                        los_occ_tau=float(vis_v2.get("los_occ_tau", 0.50)),
-                    )
-                else:
-                    di, vi = assign_dist5_vis3_indices(dist_ci, sa)
+                c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
+                l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
+                di, vi = assign_dist5_vis3_indices_v2(dist_ci, lf, ep, clear_pts_tau=c_tau, los_occ_tau=l_tau)
                 d_list.append(di[0, 0])
                 v_list.append(vi[0, 0])
             return d_list, v_list

@@ -66,15 +66,15 @@ from src_v2_mm.hetshield_heal import (
     build_hetshield_fuse_fn,
 )
 from src_v2_mm.step4_1_v2_core import (
+    DEFAULT_CLEAR_PTS_TAU,
+    DEFAULT_LOS_OCC_TAU,
     GRID_RES,
     MIN_XY,
     PROTO_H,
     PROTO_W,
     TRAIN_FULL19_DIR,
-    assign_dist5_vis3_indices,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
-    compute_ego_beam_visibility_256,
     compute_ego_expected_pts_and_los_256,
     load_ego_lidar_np,
 )
@@ -446,14 +446,9 @@ def _run_fleet_sequence(
             ptm_ci = raw_b["ego"]["pairwise_t_matrix"][0, ci, 0].detach().cpu().numpy()
             cx, cy = float(ptm_ci[0, 3]), float(ptm_ci[1, 3])
             dist_ci = torch.sqrt((gx - cx) ** 2 + (gy - cy) ** 2).view(1, 1, PROTO_H, PROTO_W)
-            if vis_v2 is not None:
-                d_i, v_i = assign_dist5_vis3_indices_v2(
-                    dist_ci, los_f, exp_pts,
-                    clear_pts_tau=float(vis_v2["clear_pts_tau"]),
-                    los_occ_tau=float(vis_v2.get("los_occ_tau", 0.50)),
-                )
-            else:
-                d_i, v_i = assign_dist5_vis3_indices(dist_ci, sigma_alea)
+            c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
+            l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
+            d_i, v_i = assign_dist5_vis3_indices_v2(dist_ci, los_f, exp_pts, clear_pts_tau=c_tau, los_occ_tau=l_tau)
             per_cav_didx[ci] = d_i[0, 0]
             per_cav_vidx[ci] = v_i[0, 0]
             cov_ci = warp_affine_simple(vmask[ci : ci + 1].float(), amat[0, 0, ci : ci + 1], (PROTO_H, PROTO_W), align_corners=ac) > 0.5

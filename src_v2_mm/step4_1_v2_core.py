@@ -264,15 +264,19 @@ def compute_ego_beam_visibility_256(
     return sigma_alea_sq
 
 
+DEFAULT_CLEAR_PTS_TAU = 73.853
+DEFAULT_LOS_OCC_TAU = 0.50
+
+
 def assign_dist5_vis3_indices_v2(
     dist_cav: torch.Tensor,
     los_factor: torch.Tensor,
     expected_pts: torch.Tensor,
-    clear_pts_tau: float,
-    los_occ_tau: float = 0.50,
+    clear_pts_tau: float = DEFAULT_CLEAR_PTS_TAU,
+    los_occ_tau: float = DEFAULT_LOS_OCC_TAU,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    改进版物理可见性分档（原因 B 根治）：
+    全仓库唯一物理可见性与距离分档函数（A1 修复，彻底移除旧 0.33/0.67 版本）：
     - Occluded (2): 前方存在遮挡物（los_factor < los_occ_tau）；
     - Clear    (0): 前方无遮挡（los_factor >= los_occ_tau）且 本车预期激光点数 expected_pts >= clear_pts_tau；
     - Sparse   (1): 前方无遮挡但本车预期激光点数不足（expected_pts < clear_pts_tau）。
@@ -287,20 +291,6 @@ def assign_dist5_vis3_indices_v2(
     unoccluded = los_factor >= float(los_occ_tau)
     v_idx[unoccluded & (expected_pts >= float(clear_pts_tau))] = 0  # Clear
     v_idx[~unoccluded] = 2                                          # Occluded
-    return d_idx, v_idx
-
-
-def assign_dist5_vis3_indices(dist_cav: torch.Tensor, sigma_alea: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-    """返回 5 档距离索引 d_idx ∈ {0..4} 与 3 档可见性索引 v_idx ∈ {0:Clear, 1:Sparse, 2:Occluded}。"""
-    d_idx = torch.full_like(dist_cav, 4, dtype=torch.long)
-    d_idx[dist_cav < 45.0] = 3
-    d_idx[dist_cav < 30.0] = 2
-    d_idx[dist_cav < 15.0] = 1
-    d_idx[dist_cav < 6.0] = 0
-
-    v_idx = torch.zeros_like(sigma_alea, dtype=torch.long)
-    v_idx[(sigma_alea >= 0.33) & (sigma_alea < 0.67)] = 1
-    v_idx[sigma_alea >= 0.67] = 2
     return d_idx, v_idx
 
 
@@ -360,8 +350,21 @@ def compute_dev_maps_from_protocol(
 
 
 @torch.no_grad()
-def extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx: int, gx: torch.Tensor, gy: torch.Tensor) -> dict:
-    """加载单帧 m1/m2 成对样本并提取几何/可见性上下文与两模态干净 4 通道偏差图。"""
+def extract_frame_context_and_clean(
+    wrapper,
+    ds_m1,
+    ds_m2,
+    idx: int,
+    gx: torch.Tensor,
+    gy: torch.Tensor,
+    clear_pts_tau: float = DEFAULT_CLEAR_PTS_TAU,
+    los_occ_tau: float = DEFAULT_LOS_OCC_TAU,
+) -> dict:
+    """
+    加载单帧 m1/m2 成对样本并提取统一物理可见性（A1 唯一函数）与双覆盖区干净偏差图：
+    - cov_ego_m1_full : m1 完整激光雷达覆盖范围（用于主实验、ASR、自适应攻击与 m1 标定统计）；
+    - cov_ego         : m1/m2 共同摄像头视野 [66:190, 66:190]（保留用于动机实验表 2 跨传感器公平对比）。
+    """
     from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
     from opencood.tools import train_utils
 
@@ -369,8 +372,8 @@ def extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx: int, gx: torch.T
     b2 = train_utils.to_device(ds_m2.collate_batch_test([ds_m2[idx]]), wrapper.device_obj)
 
     ego_pts = load_ego_lidar_np(ds_m1, idx)
-    sigma_alea = compute_ego_beam_visibility_256(ego_pts, gx, gy, num_beams=64)  # (1,1,256,256)
-    occ_mask_ego = sigma_alea >= 0.67
+    sigma_alea, los_factor, expected_pts = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)
+    occ_mask_ego = los_factor < float(los_occ_tau)
 
     ptm = b1["ego"]["pairwise_t_matrix"][0, 1, 0].detach().cpu().numpy()
     cx, cy = float(ptm[0, 3]), float(ptm[1, 3])
@@ -380,18 +383,24 @@ def extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx: int, gx: torch.T
     p2 = wrapper.extract_protocol_features(b2["ego"])
     ac = wrapper.model.pyramid_backbone.align_corners
 
-    # 使用统一的 m2 局部有效区裁剪边界 [66:190, 66:190]，确保 m1 与 m2 评估相同空间域
+    # 共同视野（供动机实验表 2 使用）与 m1 完整激光雷达覆盖范围（供主实验与 m1 标定使用）
     cov_local_m1 = p2["cam_valid_mask"][1:2]
     cov_ego = warp_affine_simple(cov_local_m1, p2["affine_matrix"][0, 0, 1:2], (PROTO_H, PROTO_W), align_corners=ac) > 0.5
+    cov_local_m1_full = p1["cam_valid_mask"][1:2]
+    cov_ego_m1_full = warp_affine_simple(
+        cov_local_m1_full.float(), p1["affine_matrix"][0, 0, 1:2], (PROTO_H, PROTO_W), align_corners=ac
+    ) > 0.5
 
-    # 单车 ego 检测概率（同一帧下本车均为 m1，m1/m2 共享，只在需要时保证与各自 feat[0:1] 一致）
     o_ego_single = wrapper.forward_single_agent(p1["heter_feature_2d"][0:1])
     p_ego_cls = torch.sigmoid(o_ego_single["cls_preds"]).max(dim=1, keepdim=True)[0]
 
-    dev_clean_m1 = compute_dev_maps_from_protocol(wrapper, p1, p1["heter_feature_2d"], p_ego_cls, cov_ego)
+    dev_clean_m1_full = compute_dev_maps_from_protocol(wrapper, p1, p1["heter_feature_2d"], p_ego_cls, cov_ego_m1_full)
+    dev_clean_m1_common = compute_dev_maps_from_protocol(wrapper, p1, p1["heter_feature_2d"], p_ego_cls, cov_ego)
     dev_clean_m2 = compute_dev_maps_from_protocol(wrapper, p2, p2["heter_feature_2d"], p_ego_cls, cov_ego)
 
-    d_idx, v_idx = assign_dist5_vis3_indices(dist_cav, sigma_alea)
+    d_idx, v_idx = assign_dist5_vis3_indices_v2(
+        dist_cav, los_factor, expected_pts, clear_pts_tau=float(clear_pts_tau), los_occ_tau=float(los_occ_tau)
+    )
 
     return {
         "sample_idx": int(idx),
@@ -400,12 +409,17 @@ def extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx: int, gx: torch.T
         "p_ego_cls": p_ego_cls,
         "cov_ego": cov_ego,
         "cov_local_m1": cov_local_m1,
+        "cov_ego_m1_full": cov_ego_m1_full,
+        "cov_local_m1_full": cov_local_m1_full,
         "occ_mask_ego": occ_mask_ego,
+        "los_factor": los_factor,
+        "expected_pts": expected_pts,
         "dist_cav": dist_cav,
         "sigma_alea": sigma_alea,
         "d_idx": d_idx[0, 0],  # (256, 256)
-        "v_idx": v_idx[0, 0],  # (256, 256)
-        "dev_clean": {"m1": dev_clean_m1, "m2": dev_clean_m2},
+        "v_idx": v_idx[0, 0],  # (256, 256) 唯一新版物理可见性
+        "dev_clean": {"m1": dev_clean_m1_full, "m2": dev_clean_m2},
+        "dev_clean_common": {"m1": dev_clean_m1_common, "m2": dev_clean_m2},
     }
 
 

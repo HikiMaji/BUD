@@ -315,23 +315,12 @@ def _eval_one_sequence(
                 seq_rec["blind_valid_only"][mod][cond][meth] += sum(1 for bi in blind_idxs if r05[4][bi])
 
     for fi, idx in enumerate(indices):
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
-        cov_2d = b["cov_ego"][0, 0]
+        c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else 73.853
+        l_tau = float(vis_v2.get("los_occ_tau", 0.50)) if vis_v2 is not None else 0.50
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         d_idx = b["d_idx"]
-        v_idx_old = b["v_idx"]
-        if vis_v2 is not None:
-            ego_pts_v2 = load_ego_lidar_np(ds_m1, idx)
-            _, los_f, exp_pts = compute_ego_expected_pts_and_los_256(ego_pts_v2, gx, gy, num_beams=64)
-            _, v_idx_4d = assign_dist5_vis3_indices_v2(
-                b["dist_cav"], los_f, exp_pts,
-                clear_pts_tau=float(vis_v2["clear_pts_tau"]),
-                los_occ_tau=float(vis_v2.get("los_occ_tau", 0.50)),
-            )
-            v_idx = v_idx_4d[0, 0]
-            occ_mask_4d = (los_f < float(vis_v2.get("los_occ_tau", 0.50))).float()
-        else:
-            v_idx = v_idx_old
-            occ_mask_4d = (v_idx == 2).view(1, 1, PROTO_H, PROTO_W).float()
+        v_idx = b["v_idx"]
+        occ_mask_4d = b["occ_mask_ego"].float()
 
         raw_b1 = train_utils.to_device(ds_m1.collate_batch_test([ds_m1[idx]]), "cpu")
         b_post = train_utils.to_device(_slim_batch_for_postprocess(raw_b1), wrapper.device_obj)
@@ -340,11 +329,15 @@ def _eval_one_sequence(
             ego_out = wrapper.forward_single_agent(b["p1"]["heter_feature_2d"][0:1])
             ego_pb, ego_ps, ego_gb = wrapper.decode_boxes(b_post, ego_out, ds_m1)
 
-        binfo = _analyze_frame_blind_gts(ds_m1, idx, ego_pb, ego_ps, ego_gb, cov_2d)
-        gt_np, gt_polys = binfo["gt_np"], binfo["gt_polys"]
-        ego_r05, ego_r07 = binfo["ego_res_05"], binfo["ego_res_07"]
-        blind_idxs = binfo["blind_indices"]
-        seq_rec["blind_total"] += len(blind_idxs)
+        # 客观盲区按对应协作者覆盖区分别判定；主实验中 m1 用自身完整覆盖范围，m2 用相机覆盖范围
+        binfo_m1 = _analyze_frame_blind_gts(ds_m1, idx, ego_pb, ego_ps, ego_gb, b["cov_ego_m1_full"][0, 0])
+        binfo_m2 = _analyze_frame_blind_gts(ds_m1, idx, ego_pb, ego_ps, ego_gb, b["cov_ego"][0, 0])
+        gt_np, gt_polys = binfo_m2["gt_np"], binfo_m2["gt_polys"]
+        ego_r05, ego_r07 = binfo_m2["ego_res_05"], binfo_m2["ego_res_07"]
+        seq_rec["blind_total"] += len(binfo_m2["blind_indices"])
+        seq_rec.setdefault("blind_total_by_mod", {"m1": 0, "m2": 0})
+        seq_rec["blind_total_by_mod"]["m1"] += len(binfo_m1["blind_indices"])
+        seq_rec["blind_total_by_mod"]["m2"] += len(binfo_m2["blind_indices"])
 
         for mod, p_dict in (("m1", b["p1"]), ("m2", b["p2"])):
             feat = p_dict["heter_feature_2d"]
@@ -352,7 +345,11 @@ def _eval_one_sequence(
             amat = p_dict["affine_matrix"]
             mods_l = list(p_dict["agent_modality_list"])
             vmask = p_dict["cam_valid_mask"]
-            preg = b["cov_local_m1"] if mod == "m1" else None
+            # 主实验：m1 使用自身完整激光雷达覆盖范围且不限制攻击区；m2 使用相机覆盖范围
+            cov_ego_mod = b["cov_ego_m1_full"] if mod == "m1" else b["cov_ego"]
+            cov_2d = cov_ego_mod[0, 0]
+            blind_idxs = binfo_m1["blind_indices"] if mod == "m1" else binfo_m2["blind_indices"]
+            preg = None
 
             # 生成本帧全部 8 种攻击（Clean 直接用原特征，统一使用关键字参数防错位）
             f_p05, _ = generate_scaled_pgd_removal_heal(wrapper, feat, rlen, amat, mods_l, vmask, attacker_idx=1, sigma_mult=0.5, steps=8, perturb_region_mask=preg)
@@ -396,7 +393,7 @@ def _eval_one_sequence(
 
                 # 2) No-Defense + 偏差提取
                 out_nd, dev_4ch, d_drop, d_add, p_fused_cls = _extract_out_and_dev_maps(
-                    wrapper, p_dict, f_cur, b["p_ego_cls"], b["cov_ego"], k_tol=k_tol
+                    wrapper, p_dict, f_cur, b["p_ego_cls"], cov_ego_mod, k_tol=k_tol
                 )
                 fg_mask = F.max_pool2d(p_fused_cls, kernel_size=3, stride=1, padding=1)[0, 0] > fg_prob_tau
                 nd_pb, nd_ps, _ = wrapper.decode_boxes(b_post, out_nd, ds_m1)
@@ -423,7 +420,7 @@ def _eval_one_sequence(
                     seq_rec["occ_det_scores"][mod][f"{key_tag}_new"].append(sc_new)
                     if old_auditor is not None:
                         ar_old = old_auditor.audit_dev_maps(
-                            dev_4ch, cov_2d, d_idx, v_idx_old, mod, build_gate=True,
+                            dev_4ch, cov_2d, d_idx, v_idx, mod, build_gate=True,
                             d_drop_tol=d_drop, d_add_tol=d_add, enable_whole_fallback=False
                         )
                         inv_old = 1.0 - ar_old["gate_L0"][0, 0][cov_2d]
@@ -488,9 +485,11 @@ def _aggregate_with_paired_bootstrap(seq_names: list, seq_caches: dict) -> dict:
         ("bud_frozen_vs_bud_local_only", "bud_frozen", "bud_local_only"),
     ]
 
-    seq_blind_totals = {s: int(seq_caches[s]["blind_total"]) for s in seq_names}
-
     for mod in MODALITIES_2:
+        seq_blind_totals = {
+            s: int(seq_caches[s].get("blind_total_by_mod", {}).get(mod, seq_caches[s]["blind_total"]))
+            for s in seq_names
+        }
         ap_summary[mod] = OrderedDict()
         paired_ap_diffs[mod] = OrderedDict()
         blind_summary[mod] = OrderedDict()
