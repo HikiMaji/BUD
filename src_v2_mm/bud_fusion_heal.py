@@ -198,17 +198,21 @@ def build_directional_gate_map(
     return gate_l0
 
 
-def build_gated_fuse_fn(gate_L0: torch.Tensor) -> Callable:
+def build_gated_fuse_fn(
+    gate_L0: torch.Tensor,
+    downsample_mode: str = "min_pool",
+) -> Callable:
     """
     构造可嵌入 HEALBaseWrapper.forward_from_protocol(..., custom_fuse_fn=...) 的多尺度局部门控融合闭包。
 
-    支持单协作者 (1, 1, 256, 256) 及多车队 (N_collab, 1, 256, 256) 独立门控：
-    先计算与原生 weighted_fuse_safe 完全一致的多尺度基准融合权重 w_base，
-    再以 g_l[c] 缩放第 c 辆协作者权重，并将所有协作者削减的总份额无损回流给可信本车 ego，
-    保证任意网格权重总和恒定为 1（在有效区域内）。
+    B1 修复：粗尺度 L1/L2 默认采用 -F.max_pool2d(-g_src, kernel_size=s, stride=s) 取最小值（s = 256 / h），
+    保留 downsample_mode="area" 开关供 D4-(h) 消融实验对照。
     """
     from opencood.models.fuse_modules.fusion_in_one import regroup
     from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
+
+    if downsample_mode not in ("min_pool", "area"):
+        raise ValueError(f"未知 downsample_mode: {downsample_mode}")
 
     def _custom_fuse(
         feature_list,
@@ -256,6 +260,9 @@ def build_gated_fuse_fn(gate_L0: torch.Tensor) -> Callable:
                         raise ValueError(f"gate_L0 协作者维 {g_src.shape[0]} 与实际协作者数 {n_cav - 1} 不匹配！")
                     if g_src.shape[-2:] == (h, w):
                         g_l = g_src
+                    elif downsample_mode == "min_pool":
+                        s = int(g_src.shape[-2]) // int(h)
+                        g_l = -F.max_pool2d(-g_src, kernel_size=s, stride=s)
                     else:
                         g_l = F.interpolate(g_src, size=(h, w), mode="area")
                     g_l = torch.clamp(g_l, min=0.0, max=1.0)
