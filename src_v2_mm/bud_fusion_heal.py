@@ -229,15 +229,117 @@ def build_directional_gate_map(
     return gate_l0
 
 
+def redistribute_weights_ego_only(
+    w_base: torch.Tensor,
+    gate_collab: torch.Tensor,
+    any_valid: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+    """
+    原版权重回流规则（仅保留供 D3、D4-(i) 消融对照及 B3 单测第 4 条一致性核验）：
+    所有协作车被削减的权重 (1 - G_i) * w_i 全部归还给本车 w_0。
+    """
+    if w_base.shape[0] <= 1:
+        return w_base.clone()
+    if any_valid is None:
+        any_valid = w_base.sum(dim=0, keepdim=True) > 1e-12
+    g_l = torch.clamp(gate_collab.to(device=w_base.device, dtype=w_base.dtype), min=0.0, max=1.0)
+    w_collab_new = w_base[1:] * g_l
+    reclaim_to_ego = torch.sum(w_base[1:] * (1.0 - g_l), dim=0, keepdim=True)
+    w_ego_new = torch.where(
+        (w_collab_new == 0.0).all(dim=0, keepdim=True),
+        any_valid.to(w_base.dtype),
+        w_base[0:1] + reclaim_to_ego,
+    )
+    return torch.cat([w_ego_new, w_collab_new], dim=0)
+
+
+def redistribute_weights_trusted_other(
+    w_base: torch.Tensor,
+    gate_collab: torch.Tensor,
+    any_valid: Optional[torch.Tensor] = None,
+    tau_trust: float = 0.9,
+    differentiable_ste: bool = False,
+    ste_temp: float = 0.05,
+) -> torch.Tensor:
+    """
+    B3 第三版权重重分配（逐格子、逐尺度计算；G_0 ≡ 1）：
+      T      = {0} ∪ {j >= 1 : G_j >= tau_trust}                # 可信集合
+      R_i    = (1 - G_i) * w_i               (i >= 1)           # 协作车 i 被削减的权重
+      T_{-i} = T \\ {i}                                          # 排除 i 自己！
+      w_tilde_j = G_j * w_j + 1[j in T] * sum_{i>=1, i!=j} R_i * w_j / sum_{k in T_{-i}} w_k
+      若 sum_{k in T_{-i}} w_k == 0，则 R_i 全部加给本车 w_tilde_0（在有效格子上）。
+
+    严格杜绝两种错误写法：
+      (a) 不对全员做 G_i*w_i / sum_j G_j*w_j 重归一化（防止仅攻击者覆盖格被放大回 1.0）；
+      (b) 不合成总池再分给整个 T（防止 0.9 <= G_i < 1 的车拿回自己被扣掉的份额，且保证单协作车与原版完全一致）。
+    """
+    n_cav = int(w_base.shape[0])
+    if n_cav <= 1:
+        return w_base.clone()
+    if any_valid is None:
+        any_valid = w_base.sum(dim=0, keepdim=True) > 1e-12
+
+    g_collab = torch.clamp(gate_collab.to(device=w_base.device, dtype=w_base.dtype), min=0.0, max=1.0)
+    if g_collab.shape[0] != n_cav - 1:
+        raise ValueError(f"gate_collab 数量 {g_collab.shape[0]} 与协作车数 {n_cav - 1} 不一致")
+
+    ones_ego = torch.ones_like(w_base[0:1])
+    g_full = torch.cat([ones_ego, g_collab], dim=0)  # (N_cav, 1, H, W), G_0 ≡ 1
+
+    hard_t = (g_full >= float(tau_trust)).to(dtype=w_base.dtype)
+    hard_t[0:1] = 1.0  # 本车 0 恒属于可信集合 T
+    if differentiable_ste:
+        # 供 D5 / F-P0.6 白盒端到端自适应攻击使用：前向严格等于硬集合，反向走 Sigmoid 直通梯度
+        soft_t = torch.sigmoid((g_full - float(tau_trust)) / max(float(ste_temp), 1e-4))
+        in_t_weight = hard_t - soft_t.detach() + soft_t
+        in_t_weight = torch.cat([ torch.ones_like(in_t_weight[0:1]), in_t_weight[1:] ], dim=0)
+    else:
+        in_t_weight = hard_t
+
+    w_tilde = g_full * w_base
+    ego_add_accum = torch.zeros_like(w_base[0:1])
+    valid_f = any_valid.to(dtype=w_base.dtype)
+
+    for i in range(1, n_cav):
+        r_i = (1.0 - g_full[i : i + 1]) * w_base[i : i + 1]  # (1, 1, H, W)
+        # 构造 T_{-i} = T \ {i}，严格将第 i 辆车自身排除在接收集合之外
+        mask_not_i = torch.ones((n_cav, 1, 1, 1), device=w_base.device, dtype=w_base.dtype)
+        mask_not_i[i, 0, 0, 0] = 0.0
+        t_minus_i = in_t_weight * mask_not_i
+
+        w_elig = w_base * t_minus_i
+        denom_i = w_elig.sum(dim=0, keepdim=True)
+        has_denom = denom_i > 1e-12
+
+        share_i = torch.where(
+            has_denom,
+            r_i * w_elig / torch.clamp(denom_i, min=1e-12),
+            torch.zeros_like(w_elig),
+        )
+        w_tilde = w_tilde + share_i
+        # 当 sum_{k in T_{-i}} w_k == 0 时，R_i 全部加给本车 w_tilde_0
+        ego_fallback_i = torch.where(has_denom, torch.zeros_like(r_i), r_i * valid_f)
+        ego_add_accum = ego_add_accum + ego_fallback_i
+
+    if float(ego_add_accum.abs().max().item()) > 0.0 or differentiable_ste:
+        w_tilde = torch.cat([w_tilde[0:1] + ego_add_accum, w_tilde[1:]], dim=0)
+    return w_tilde * valid_f
+
+
 def build_gated_fuse_fn(
     gate_L0: torch.Tensor,
     downsample_mode: str = "min_pool",
+    enable_b3: bool = True,
+    tau_trust: float = 0.9,
+    differentiable_ste: bool = False,
 ) -> Callable:
     """
     构造可嵌入 HEALBaseWrapper.forward_from_protocol(..., custom_fuse_fn=...) 的多尺度局部门控融合闭包。
 
-    B1 修复：粗尺度 L1/L2 默认采用 -F.max_pool2d(-g_src, kernel_size=s, stride=s) 取最小值（s = 256 / h），
-    保留 downsample_mode="area" 开关供 D4-(h) 消融实验对照。
+    - B1 修复：粗尺度 L1/L2 默认采用 -F.max_pool2d(-g_src, kernel_size=s, stride=s) 取最小值（s = 256 / h），
+      保留 downsample_mode="area" 开关供 D4-(h) 消融实验对照；
+    - B3 修复：默认 enable_b3=True，采用第三版可信集合 T_{-i} 权重重分配（tau_trust=0.9），
+      保留 enable_b3=False 回退“全部还给本车”供 D3 与 D4-(i) 消融对照。
     """
     from opencood.models.fuse_modules.fusion_in_one import regroup
     from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
@@ -298,14 +400,12 @@ def build_gated_fuse_fn(
                         g_l = F.interpolate(g_src, size=(h, w), mode="area")
                     g_l = torch.clamp(g_l, min=0.0, max=1.0)
 
-                    w_collab_new = w_base[1:] * g_l
-                    reclaim_to_ego = torch.sum(w_base[1:] * (1.0 - g_l), dim=0, keepdim=True)
-                    w_ego_new = torch.where(
-                        (w_collab_new == 0.0).all(dim=0, keepdim=True),
-                        any_valid.to(w_base.dtype),
-                        w_base[0:1] + reclaim_to_ego,
-                    )
-                    w_new = torch.cat([w_ego_new, w_collab_new], dim=0)
+                    if enable_b3:
+                        w_new = redistribute_weights_trusted_other(
+                            w_base, g_l, any_valid=any_valid, tau_trust=tau_trust, differentiable_ste=differentiable_ste
+                        )
+                    else:
+                        w_new = redistribute_weights_ego_only(w_base, g_l, any_valid=any_valid)
                 else:
                     w_new = w_base
 

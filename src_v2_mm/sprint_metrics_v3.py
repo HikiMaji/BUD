@@ -112,16 +112,18 @@ def evaluate_frame_asr_strict(
                     succ += 1
     elif mode == "fabrication":
         for cx, cy in candidate_points_xy:
-            if has_center_within_radius(cln_xy, cx, cy, radius_m=radius_m):
-                continue
+            # F-P0.8：首先检查锚点 3m 内是否存在真实 GT 框；若存在，一律归入近目标伪造单独统计，绝不静默丢弃
             if has_center_within_radius(gt_xy, cx, cy, radius_m=radius_m):
                 near_gt_total += 1
                 if has_center_within_radius(def_xy, cx, cy, radius_m=radius_m):
                     near_gt_succ += 1
-            else:
-                total += 1
-                if has_center_within_radius(def_xy, cx, cy, radius_m=radius_m):
-                    succ += 1
+                continue
+            # 3m 内无真实 GT 框：再排除干净融合原本已存在虚警预测框的位置，其余计入标准伪造分母
+            if has_center_within_radius(cln_xy, cx, cy, radius_m=radius_m):
+                continue
+            total += 1
+            if has_center_within_radius(def_xy, cx, cy, radius_m=radius_m):
+                succ += 1
     else:
         raise ValueError(f"未知的 ASR 模式: {mode}")
 

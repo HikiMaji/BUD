@@ -537,11 +537,14 @@ def _run_fleet_sequence(
                 _rec(bkey, "whole_cav_drop", _match_tp_fp_and_hits(wpb, wps, gt_np, gt_polys, 0.5),
                      _match_tp_fp_and_hits(wpb, wps, gt_np, gt_polys, 0.7), blind_idxs)
 
-            # BUD-Fusion (Frozen)
+            # BUD-Fusion (Frozen, 默认启用 B3 可信集合重分配，亦记录 bud_no_b3 供 D3 对照)
             gate_stack = torch.cat(bud_gates, dim=0)
+            b3_tau = float((auditor.gating_calib or {}).get("gating_params", {}).get("tau_trust", 0.9))
+            b3_enabled = bool((auditor.gating_calib or {}).get("gating_params", {}).get("enable_b3", True))
             with torch.no_grad():
                 out_bud = wrapper.forward_from_protocol(
-                    f_cur, rlen, amat, mods_l, custom_fuse_fn=build_gated_fuse_fn(gate_stack)
+                    f_cur, rlen, amat, mods_l,
+                    custom_fuse_fn=build_gated_fuse_fn(gate_stack, enable_b3=b3_enabled, tau_trust=b3_tau),
                 )
                 bpb, bps, _ = wrapper.decode_boxes(b_post, out_bud, ds)
             _rec(bkey, "bud_frozen", _match_tp_fp_and_hits(bpb, bps, gt_np, gt_polys, 0.5),
