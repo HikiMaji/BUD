@@ -22,6 +22,7 @@ import random
 import sys
 import time
 from collections import Counter, OrderedDict
+from typing import Tuple
 
 import numpy as np
 import torch
@@ -37,6 +38,7 @@ from src_v2_mm.baselines_robosac_lucia_heal import (
 )
 from src_v2_mm.bud_fusion_heal import (
     BUDFusionHEALAuditor,
+    build_fg_mask,
     build_gated_fuse_fn,
     build_whole_cav_reject_fuse_fn,
     extract_single_cav_dev_and_signed,
@@ -45,6 +47,7 @@ from src_v2_mm.eval_stats_utils import (
     build_seq_bootstrap_indices,
     paired_block_bootstrap_rate_diff,
 )
+from src_v2_mm.sprint_metrics_v3 import evaluate_frame_asr_strict
 from src_v2_mm.heal_attacks import (
     generate_local_ghost_spoofing_heal,
     generate_local_occluded_ghost_heal,
@@ -68,11 +71,11 @@ from src_v2_mm.step4_1_v2_core import (
 )
 
 DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_frozen_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_4_bud_frozen_calibrator.json")
-DEFAULT_HS_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_1_hetshield_heal_calib.json")
-DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_4_asr_seq_cache")
-DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_4_targeted_asr_report.json")
+DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a5_base_calibrator.json")
+DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_v3", "a5_bud_frozen_calibrator.json")
+DEFAULT_HS_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a2_hetshield_calib.json")
+DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_v3", "step5_4_asr_seq_cache")
+DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_v3", "step5_4_targeted_asr_report.json")
 
 MATCH_RADIUS_M = 3.0
 BOOT_N = 2000
@@ -223,35 +226,49 @@ def _eval_methods_and_asr(
     per_cav_didx: dict,
     per_cav_vidx: dict,
     fg_prob_tau: float,
+    fg_mode: str,
+    s_min: float,
+    cln_pb_np,
+    cln_ps_np,
+    gt_boxes_np,
     seq_name: str,
     idx: int,
-    valid_points_xy: list,
+    candidate_points_xy: list,
     mode: str,
     enable_robosac: bool,
     assumed_attackers: int = 1,
-) -> dict:
-    """在指定攻击特征 f_cur 上运行所有方法并统计 ASR 命中次数 (succ, total)。"""
+) -> Tuple[dict, dict]:
+    """在指定攻击特征 f_cur 上按 A4/F-P0.8 严格防刷规范统计标准 ASR 与近真值伪造 (succ, total)。"""
+    from opencood.utils import common_utils
+
     rlen = cur_p["record_len"]
     amat = cur_p["affine_matrix"]
     mods_l = list(cur_p["agent_modality_list"])
     vmask = cur_p["cam_valid_mask"]
     n_total = int(f_cur.shape[0])
-    n_tot_pts = len(valid_points_xy)
 
-    def _count_succ(pred_boxes) -> int:
-        pxy = _extract_pred_centers_xy(pred_boxes)
-        if mode == "removal":
-            # 目标移除成功：被攻击真车中心 3.0 m 内不再有预测框
-            return sum(1 for (cx, cy) in valid_points_xy if not _has_box_near(pxy, cx, cy))
-        # 目标伪造成功：空白伪造锚点中心 3.0 m 内成功诱导出虚假预测框
-        return sum(1 for (cx, cy) in valid_points_xy if _has_box_near(pxy, cx, cy))
+    def _eval_boxes(pred_boxes, pred_scores):
+        pb_np = common_utils.torch_tensor_to_numpy(pred_boxes) if (pred_boxes is not None and len(pred_boxes) > 0) else None
+        ps_np = common_utils.torch_tensor_to_numpy(pred_scores).reshape(-1) if (pred_scores is not None and len(pred_scores) > 0) else None
+        st = evaluate_frame_asr_strict(
+            mode=mode,
+            candidate_points_xy=candidate_points_xy,
+            clean_pred_boxes_np=cln_pb_np,
+            clean_pred_scores_np=cln_ps_np,
+            defended_pred_boxes_np=pb_np,
+            defended_pred_scores_np=ps_np,
+            gt_boxes_np=gt_boxes_np,
+            s_min=s_min,
+            radius_m=MATCH_RADIUS_M,
+        )
+        return (st["succ"], st["total"]), (st["near_gt_succ"], st["near_gt_total"])
 
-    res = {}
+    res, near_gt_res = {}, {}
     # 1) No-Defense
     with torch.no_grad():
         out_nd = wrapper.forward_from_protocol(f_cur, rlen, amat, mods_l)
-        nd_pb, _, _ = wrapper.decode_boxes(b_post, out_nd, ds)
-    res["no_defense"] = (_count_succ(nd_pb), n_tot_pts)
+        nd_pb, nd_ps, _ = wrapper.decode_boxes(b_post, out_nd, ds)
+    res["no_defense"], near_gt_res["no_defense"] = _eval_boxes(nd_pb, nd_ps)
 
     # 2) BUD-Fusion + Whole-CAV Drop
     reject_flags, bud_gates = [], []
@@ -260,7 +277,7 @@ def _eval_methods_and_asr(
         dev_ci, d_drop_ci, d_add_ci, cov_ci, p_pair_ci = extract_single_cav_dev_and_signed(
             wrapper, f_cur, amat, mods_l, vmask, p_ego_cls, cav_idx=ci, k_tol=5, return_pfused=True
         )
-        fg_m = F.max_pool2d(p_pair_ci, kernel_size=3, stride=1, padding=1)[0, 0] > fg_prob_tau
+        fg_m = build_fg_mask(p_ego_cls, p_pair_ci, per_cav_vidx[ci], fg_prob_tau=fg_prob_tau, mode=fg_mode)
         ar_ci = auditor.audit_dev_maps(
             dev_ci, cov_ci, per_cav_didx[ci], per_cav_vidx[ci], mod_ci,
             build_gate=True, d_drop_tol=d_drop_ci, d_add_tol=d_add_ci,
@@ -278,20 +295,20 @@ def _eval_methods_and_asr(
             out_wd = wrapper.forward_from_protocol(
                 f_cur, rlen, amat, mods_l, custom_fuse_fn=build_whole_cav_reject_fuse_fn(reject_flags, device=str(wrapper.device_obj))
             )
-        wd_pb, _, _ = wrapper.decode_boxes(b_post, out_wd, ds)
-    res["whole_cav_drop"] = (_count_succ(wd_pb), n_tot_pts)
+        wd_pb, wd_ps, _ = wrapper.decode_boxes(b_post, out_wd, ds)
+    res["whole_cav_drop"], near_gt_res["whole_cav_drop"] = _eval_boxes(wd_pb, wd_ps)
 
     gate_stack = torch.cat(bud_gates, dim=0)
     with torch.no_grad():
         out_bud = wrapper.forward_from_protocol(f_cur, rlen, amat, mods_l, custom_fuse_fn=build_gated_fuse_fn(gate_stack))
-        bud_pb, _, _ = wrapper.decode_boxes(b_post, out_bud, ds)
-    res["bud_frozen"] = (_count_succ(bud_pb), n_tot_pts)
+        bud_pb, bud_ps, _ = wrapper.decode_boxes(b_post, out_bud, ds)
+    res["bud_frozen"], near_gt_res["bud_frozen"] = _eval_boxes(bud_pb, bud_ps)
 
     # 3) LUCIA
     with torch.no_grad():
         out_luc = wrapper.forward_from_protocol(f_cur, rlen, amat, mods_l, custom_fuse_fn=build_lucia_fuse_fn(compression_ratio=32))
-        luc_pb, _, _ = wrapper.decode_boxes(b_post, out_luc, ds)
-    res["lucia"] = (_count_succ(luc_pb), n_tot_pts)
+        luc_pb, luc_ps, _ = wrapper.decode_boxes(b_post, out_luc, ds)
+    res["lucia"], near_gt_res["lucia"] = _eval_boxes(luc_pb, luc_ps)
 
     # 4) HetShield (Paper & Tuned)
     for hs_name in ("hetshield_paper", "hetshield_tuned"):
@@ -302,8 +319,8 @@ def _eval_methods_and_asr(
             out_hs = wrapper.forward_from_protocol(
                 f_cur, rlen, amat, mods_l, custom_fuse_fn=build_hetshield_fuse_fn(g_list, device=str(wrapper.device_obj))
             )
-            hs_pb, _, _ = wrapper.decode_boxes(b_post, out_hs, ds)
-        res[hs_name] = (_count_succ(hs_pb), n_tot_pts)
+            hs_pb, hs_ps, _ = wrapper.decode_boxes(b_post, out_hs, ds)
+        res[hs_name], near_gt_res[hs_name] = _eval_boxes(hs_pb, hs_ps)
 
     # 5) ROBOSAC (仅 >=3 车混合车队启用)
     if enable_robosac and n_total >= 3:
@@ -313,21 +330,28 @@ def _eval_methods_and_asr(
             ego_boxes_np=ego_pb_np, ego_pb=ego_pb, ego_ps=ego_ps, ego_gb=ego_gb,
             frame_seed=idx, assumed_attackers=max(1, int(assumed_attackers)),
         )
-        res["robosac"] = (_count_succ(rob_res["pb"]), n_tot_pts)
+        res["robosac"], near_gt_res["robosac"] = _eval_boxes(rob_res["pb"], rob_res["ps"])
 
-    return res
+    return res, near_gt_res
 
 
-def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_defs, robosac, seq_name: str, idxs: list, gx, gy) -> dict:
+def _run_one_sequence(
+    wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_defs, robosac, seq_name: str, idxs: list, gx, gy, s_min: float = 0.20
+) -> dict:
+    from typing import Tuple
     from opencood.tools import train_utils
     from opencood.utils import common_utils
 
     t0 = time.time()
     vis_v2 = (auditor.gating_calib or {}).get("visibility_v2", None)
-    fg_prob_tau = float((auditor.gating_calib or {}).get("gating_params", {}).get("fg_prob_tau", 0.20))
+    gparams_cfg = (auditor.gating_calib or {}).get("gating_params", {})
+    fg_prob_tau = float(gparams_cfg.get("fg_prob_tau", 0.20))
+    fg_mode = str(gparams_cfg.get("fg_mode", "v1"))
 
-    pair_acc = {}   # key: f"{mod}|{atk}" -> {meth: [succ, tot]}
-    multi_acc = {}  # key: f"{tier}|{role}|{atk}" -> {meth: [succ, tot]}
+    pair_acc = {}       # key: f"{mod}|{atk}" -> {meth: [succ, tot]}
+    pair_near_gt = {}   # F-P0.8 近目标伪造单独统计
+    multi_acc = {}      # key: f"{tier}|{role}|{atk}" -> {meth: [succ, tot]}
+    multi_near_gt = {}
     cav_count_hist = Counter()
 
     def _add(acc_dict: dict, key: str, meth_res: dict):
@@ -359,11 +383,13 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
             # 主实验威胁模型：单协作车 m1 使用自身完整激光雷达范围，不限制攻击区
             preg = None
 
-            # 干净融合基准框（用于验证被攻击真车原本可检出、伪造空地原本无框）
+            # 干净融合基准框与真值框（用于防刷过滤 s_min 及剔除 3m 内真值）
             with torch.no_grad():
                 out_cln = wrapper.forward_from_protocol(feat, rlen, amat, mods_l)
-                cln_pb, _, _ = wrapper.decode_boxes(b_post, out_cln, ds_ref)
-            cln_xy = _extract_pred_centers_xy(cln_pb)
+                cln_pb, cln_ps, gt_gb = wrapper.decode_boxes(b_post, out_cln, ds_ref)
+            cln_pb_np = common_utils.torch_tensor_to_numpy(cln_pb) if (cln_pb is not None and len(cln_pb) > 0) else None
+            cln_ps_np = common_utils.torch_tensor_to_numpy(cln_ps).reshape(-1) if (cln_ps is not None and len(cln_ps) > 0) else None
+            gt_np = common_utils.torch_tensor_to_numpy(gt_gb) if (gt_gb is not None and len(gt_gb) > 0) else None
 
             # 预热 HetShield 前一帧
             prev_p = None
@@ -385,36 +411,27 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
                 attacker_idx=1, num_spoofs=2, patch_radius=5, sigma_mult=2.0, steps=12, frame_seed=idx, perturb_region_mask=preg
             )
 
-            # 校验有效目标中心坐标
-            rem_pts = []
-            for hc, wc in st_rem.get("target_centers_hw", []):
-                cx, cy = _grid_hw_to_xy(hc, wc)
-                if _has_box_near(cln_xy, cx, cy):
-                    rem_pts.append((cx, cy))
-            fab_pts = []
-            for anc in st_fab.get("anchors_hwr", []):
-                cx, cy = _grid_hw_to_xy(anc[0], anc[1])
-                if not _has_box_near(cln_xy, cx, cy):
-                    fab_pts.append((cx, cy))
-            occ_pts = []
-            for anc in st_occ.get("anchors_hwr", []):
-                cx, cy = _grid_hw_to_xy(anc[0], anc[1])
-                if not _has_box_near(cln_xy, cx, cy):
-                    occ_pts.append((cx, cy))
+            rem_cands = [_grid_hw_to_xy(hc, wc) for hc, wc in st_rem.get("target_centers_hw", [])]
+            fab_cands = [_grid_hw_to_xy(anc[0], anc[1]) for anc in st_fab.get("anchors_hwr", [])]
+            occ_cands = [_grid_hw_to_xy(anc[0], anc[1]) for anc in st_occ.get("anchors_hwr", [])]
 
-            for atk_tag, f_adv, pts_xy, mode_s in (
-                ("object_removal", f_rem, rem_pts, "removal"),
-                ("object_fabrication", f_fab, fab_pts, "fabrication"),
-                ("occluded_fabrication", f_occ, occ_pts, "fabrication"),
+            for atk_tag, f_adv, cands_xy, mode_s in (
+                ("object_removal", f_rem, rem_cands, "removal"),
+                ("object_fabrication", f_fab, fab_cands, "fabrication"),
+                ("occluded_fabrication", f_occ, occ_cands, "fabrication"),
             ):
-                if not pts_xy:
+                if not cands_xy:
                     continue
-                mres = _eval_methods_and_asr(
+                mres, nres = _eval_methods_and_asr(
                     wrapper, ds_ref, b_post, p_dict, f_adv, b["p_ego_cls"], None, None,
-                    auditor, hs_defs, robosac, {1: d_2d}, {1: v_2d}, fg_prob_tau,
-                    seq_name, idx, pts_xy, mode_s, enable_robosac=False, assumed_attackers=1,
+                    auditor, hs_defs, robosac, {1: d_2d}, {1: v_2d}, fg_prob_tau, fg_mode, s_min,
+                    cln_pb_np, cln_ps_np, gt_np,
+                    seq_name, idx, cands_xy, mode_s, enable_robosac=False, assumed_attackers=1,
                 )
-                _add(pair_acc, f"{mod}|{atk_tag}", mres)
+                if mres["no_defense"][1] > 0:
+                    _add(pair_acc, f"{mod}|{atk_tag}", mres)
+                if mode_s == "fabrication" and nres["no_defense"][1] > 0:
+                    _add(pair_near_gt, f"{mod}|{atk_tag}", nres)
 
         # === Part 2: 混合多车队（3~6 车，即 2~5 辆协作车） ===
         raw_m = train_utils.to_device(ds_mix.collate_batch_test([ds_mix[idx]]), wrapper.device_obj)
@@ -444,8 +461,10 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
                 epb_m, eps_m, egb_m = wrapper.decode_boxes(b_post_m, o_ego_m, ds_mix)
                 epb_m_np = common_utils.torch_tensor_to_numpy(epb_m) if (epb_m is not None and len(epb_m) > 0) else None
                 o_cln_m = wrapper.forward_from_protocol(feat_m, rlen_m, amat_m, mods_m)
-                cln_pb_m, _, _ = wrapper.decode_boxes(b_post_m, o_cln_m, ds_mix)
-            cln_xy_m = _extract_pred_centers_xy(cln_pb_m)
+                cln_pb_m, cln_ps_m, _ = wrapper.decode_boxes(b_post_m, o_cln_m, ds_mix)
+            cln_pb_m_np = common_utils.torch_tensor_to_numpy(cln_pb_m) if (cln_pb_m is not None and len(cln_pb_m) > 0) else None
+            cln_ps_m_np = common_utils.torch_tensor_to_numpy(cln_ps_m).reshape(-1) if (cln_ps_m is not None and len(cln_ps_m) > 0) else None
+            gt_m_np = common_utils.torch_tensor_to_numpy(egb_m) if (egb_m is not None and len(egb_m) > 0) else None
 
             prev_pm = None
             if idx > 0 and sample_seqs[idx - 1] == seq_name:
@@ -455,21 +474,19 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
             _prime_hs_for_frame(hs_defs, wrapper, prev_pm, seq_name, idx - 1)
 
             for role_tag, atk_idxs in _select_mixed_attack_roles(mods_m, idx):
-                # 逐攻击者注入定向移除与虚假伪造并收集全部有效目标中心
+                # 逐攻击者注入定向移除与虚假伪造并收集候选中心
                 f_rem_m = feat_m.clone()
-                rem_pts_m = []
+                rem_cands_m = []
                 for step_k, a_idx in enumerate(atk_idxs):
                     f_rem_m, st_rm = generate_local_removal_heal(
                         wrapper, f_rem_m, rlen_m, amat_m, mods_m, vmask_m,
                         attacker_idx=a_idx, num_targets=2, patch_radius=5, sigma_mult=1.0, steps=10,
                     )
                     for hc, wc in st_rm.get("target_centers_hw", []):
-                        cx, cy = _grid_hw_to_xy(hc, wc)
-                        if _has_box_near(cln_xy_m, cx, cy):
-                            rem_pts_m.append((cx, cy))
+                        rem_cands_m.append(_grid_hw_to_xy(hc, wc))
 
                 f_fab_m = feat_m.clone()
-                fab_pts_m = []
+                fab_cands_m = []
                 for step_k, a_idx in enumerate(atk_idxs):
                     f_fab_m, st_fm = generate_local_ghost_spoofing_heal(
                         wrapper, f_fab_m, rlen_m, amat_m, mods_m, vmask_m,
@@ -477,25 +494,27 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
                         frame_seed=idx + step_k * 1009,
                     )
                     for anc in st_fm.get("anchors_hwr", []):
-                        cx, cy = _grid_hw_to_xy(anc[0], anc[1])
-                        if not _has_box_near(cln_xy_m, cx, cy):
-                            fab_pts_m.append((cx, cy))
+                        fab_cands_m.append(_grid_hw_to_xy(anc[0], anc[1]))
 
-                for atk_tag, f_adv_m, pts_xy_m, mode_s in (
-                    ("object_removal", f_rem_m, rem_pts_m, "removal"),
-                    ("object_fabrication", f_fab_m, fab_pts_m, "fabrication"),
+                for atk_tag, f_adv_m, cands_xy_m, mode_s in (
+                    ("object_removal", f_rem_m, rem_cands_m, "removal"),
+                    ("object_fabrication", f_fab_m, fab_cands_m, "fabrication"),
                 ):
-                    if not pts_xy_m:
+                    if not cands_xy_m:
                         continue
-                    mres_m = _eval_methods_and_asr(
+                    mres_m, nres_m = _eval_methods_and_asr(
                         wrapper, ds_mix, b_post_m, p_m, f_adv_m, p_ego_m, epb_m_np, (epb_m, eps_m, egb_m),
-                        auditor, hs_defs, robosac, per_d, per_v, fg_prob_tau,
-                        seq_name, idx, pts_xy_m, mode_s, enable_robosac=True, assumed_attackers=len(atk_idxs),
+                        auditor, hs_defs, robosac, per_d, per_v, fg_prob_tau, fg_mode, s_min,
+                        cln_pb_m_np, cln_ps_m_np, gt_m_np,
+                        seq_name, idx, cands_xy_m, mode_s, enable_robosac=True, assumed_attackers=len(atk_idxs),
                     )
-                    _add(multi_acc, f"{tier}|{role_tag}|{atk_tag}", mres_m)
-                    if role_tag in ("atk_m1", "atk_m2"):
-                        _add(multi_acc, f"ge2_all|single_attacker|{atk_tag}", mres_m)
-                        _add(multi_acc, f"ge2_all|{role_tag}|{atk_tag}", mres_m)
+                    if mres_m["no_defense"][1] > 0:
+                        _add(multi_acc, f"{tier}|{role_tag}|{atk_tag}", mres_m)
+                        if role_tag in ("atk_m1", "atk_m2"):
+                            _add(multi_acc, f"ge2_all|single_attacker|{atk_tag}", mres_m)
+                            _add(multi_acc, f"ge2_all|{role_tag}|{atk_tag}", mres_m)
+                    if mode_s == "fabrication" and nres_m["no_defense"][1] > 0:
+                        _add(multi_near_gt, f"{tier}|{role_tag}|{atk_tag}", nres_m)
 
         if (fi + 1) % 10 == 0 or (fi + 1) == len(idxs):
             print(f"  [ASR | {seq_name}] 进度 {fi + 1}/{len(idxs)} ({time.time() - t0:.1f}s)", flush=True)
@@ -503,9 +522,12 @@ def _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_de
     return {
         "seq_name": seq_name,
         "num_frames": len(idxs),
+        "s_min": float(s_min),
         "cav_count_hist": {str(k): int(v) for k, v in sorted(cav_count_hist.items())},
         "pair_acc": pair_acc,
+        "pair_near_gt": pair_near_gt,
         "multi_acc": multi_acc,
+        "multi_near_gt": multi_near_gt,
     }
 
 
@@ -563,6 +585,7 @@ def main():
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--frozen_gating_json", type=str, default=DEFAULT_FROZEN_GATING)
     parser.add_argument("--hetshield_calib_json", type=str, default=DEFAULT_HS_CALIB)
+    parser.add_argument("--s_min", type=float, default=0.20, help="A4 防刷有效检测框最低置信度阈值")
     parser.add_argument("--seqs", nargs="+", default=None)
     parser.add_argument("--worker_only", action="store_true")
     parser.add_argument("--cache_dir", type=str, default=DEFAULT_CACHE_DIR)
@@ -600,8 +623,10 @@ def main():
                 seq_caches[seq_name] = json.load(f)
         else:
             idxs = eval_split["sequences"][seq_name]["indices"]
-            print(f"[开始评测] Step 5-4 ASR | {seq_name} ({len(idxs)} 帧)", flush=True)
-            rec = _run_one_sequence(wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_defs, robosac, seq_name, idxs, gx, gy)
+            print(f"[开始评测] Step 5-4 ASR | {seq_name} ({len(idxs)} 帧, s_min={args.s_min})", flush=True)
+            rec = _run_one_sequence(
+                wrapper, ds_m1, ds_m2, ds_mix, sample_seqs, auditor, hs_defs, robosac, seq_name, idxs, gx, gy, s_min=args.s_min
+            )
             _atomic_write_json(cpath, rec)
             seq_caches[seq_name] = rec
 
@@ -626,14 +651,17 @@ def main():
 
     report = OrderedDict({
         "meta": {
-            "description": "步骤 ⑤-4 定向局部攻击成功率 ASR 全基线同台评测报告（Dev-320，匹配半径 3.0m，2000 次 Block-Bootstrap 95% CI）",
+            "description": "步骤 ⑤-4 防刷版定向局部攻击成功率 ASR 全基线同台评测报告（匹配半径 3.0m，剔除 3m 内真值并单列近目标伪造，2000 次 Block-Bootstrap 95% CI）",
             "match_radius_m": MATCH_RADIUS_M,
+            "s_min": float(args.s_min),
             "bootstrap_iters": BOOT_N,
             "fleet_size_summary": fleet_size_summary,
             "elapsed_sec": round(time.time() - t0, 2),
         },
         "two_vehicle_hetero_pair_asr": _aggregate_bucket(seq_order, seq_caches, "pair_acc", PAIR_METHODS),
         "mixed_multicav_fleet_asr": _aggregate_bucket(seq_order, seq_caches, "multi_acc", MULTI_METHODS),
+        "near_gt_fabrication_pair": _aggregate_bucket(seq_order, seq_caches, "pair_near_gt", PAIR_METHODS) if any(seq_caches[s].get("pair_near_gt") for s in seq_order) else {},
+        "near_gt_fabrication_multicav": _aggregate_bucket(seq_order, seq_caches, "multi_near_gt", MULTI_METHODS) if any(seq_caches[s].get("multi_near_gt") for s in seq_order) else {},
     })
     _atomic_write_json(args.out_json, report)
     print(f"\n[完成] 定向攻击 ASR 报告已保存至 {args.out_json} (总耗时 {time.time() - t0:.1f}s)")

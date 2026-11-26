@@ -52,6 +52,37 @@ def compute_shift_tolerant_semantic_maps(
     return d_drop_tol, d_add_tol
 
 
+def build_fg_mask(
+    p_ego_cls: torch.Tensor,
+    p_fused_cls: torch.Tensor,
+    v_idx: torch.Tensor,
+    fg_prob_tau: float = 0.20,
+    mode: str = "v1",
+) -> torch.Tensor:
+    """
+    B2 前景判定掩膜构造器（标定与推理全链路共用，返回形状 (H, W) 的 bool 张量）：
+    - mode == "v1"（B2 默认新规则，前景判定以本车为准）：
+      fg = (MaxPool3x3(p_0) > fg_prob_tau) | ((MaxPool3x3(p_{0,i}) > fg_prob_tau) & (v_idx != Clear))
+      在本车清晰可见（v_idx == 0）区域，仅当本车自己观测到前景时才启用宽松前景阈值，
+      防止攻击者在 Clear 空地伪造假目标骗取宽松前景阈值；
+    - mode == "v0"（旧规则，仅保留供 F-P0.2 消融实验对照）：
+      fg = MaxPool3x3(p_{0,i}) > fg_prob_tau。
+    """
+    pe_4d = p_ego_cls.view(1, 1, PROTO_H, PROTO_W) if p_ego_cls.dim() == 2 else p_ego_cls
+    pf_4d = p_fused_cls.view(1, 1, PROTO_H, PROTO_W) if p_fused_cls.dim() == 2 else p_fused_cls
+    v_2d = v_idx.view(PROTO_H, PROTO_W) if v_idx.dim() != 2 else v_idx
+
+    pf_fg = F.max_pool2d(pf_4d, kernel_size=3, stride=1, padding=1)[0, 0] > float(fg_prob_tau)
+    if mode == "v0":
+        return pf_fg
+    if mode != "v1":
+        raise ValueError(f"未知前景掩膜模式 mode={mode}，仅支持 'v1' 或 'v0'")
+
+    pe_fg = F.max_pool2d(pe_4d, kernel_size=3, stride=1, padding=1)[0, 0] > float(fg_prob_tau)
+    v_dev = v_2d.to(device=pf_fg.device)
+    return pe_fg.to(device=pf_fg.device) | (pf_fg & (v_dev != 0))
+
+
 def _compute_spatial_anomaly_and_cos(
     dev_4ch: torch.Tensor,
     cov_2d: torch.Tensor,
@@ -425,6 +456,7 @@ class BUDFusionHEALAuditor:
         d_add_tol: Optional[torch.Tensor] = None,
         enable_whole_fallback: bool = True,
         collab_fg_mask: Optional[torch.Tensor] = None,
+        gamma_add_override: Optional[Sequence[float]] = None,
     ) -> dict:
         """
         对单辆协作者的 4 通道偏差图同步输出：
@@ -481,6 +513,7 @@ class BUDFusionHEALAuditor:
                             cos_tau_bg_arg = float(gcfg["cos_tau"][mod])
                             cos_tau_fg_arg = None
                         gamma_cos_gate = gcfg.get("gamma_cos_gate", (1.0, 1.0, 1.0))
+                        gamma_add_eff = gamma_add_override if gamma_add_override is not None else gcfg["gamma_add"]
                         gate_l0 = build_directional_gate_map(
                             cos_comb=cos_comb_t4,
                             d_drop_tol=d_drop_tol,
@@ -493,7 +526,7 @@ class BUDFusionHEALAuditor:
                             w_drop=float(gcfg["w_drop"]),
                             w_add=float(gcfg["w_add"]),
                             cos_co_ratio=float(gcfg["cos_co_ratio"]),
-                            gamma_add=gcfg["gamma_add"],
+                            gamma_add=gamma_add_eff,
                             gamma_cos_gate=gamma_cos_gate,
                             r_dil=int(gcfg["r_dil"]),
                             beta=float(gcfg["beta"]),

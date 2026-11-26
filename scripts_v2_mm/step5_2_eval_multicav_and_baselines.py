@@ -46,6 +46,7 @@ from src_v2_mm.baselines_robosac_lucia_heal import (
 )
 from src_v2_mm.bud_fusion_heal import (
     BUDFusionHEALAuditor,
+    build_fg_mask,
     build_gated_fuse_fn,
     build_whole_cav_reject_fuse_fn,
     extract_single_cav_dev_and_signed,
@@ -80,11 +81,11 @@ from src_v2_mm.step4_1_v2_core import (
 )
 
 DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_frozen_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_4_bud_frozen_calibrator.json")
-DEFAULT_HETSHIELD_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_1_hetshield_heal_calib.json")
-DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_2_multicav_cache")
-DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_2_multicav_baselines_report.json")
+DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a5_base_calibrator.json")
+DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_v3", "a5_bud_frozen_calibrator.json")
+DEFAULT_HETSHIELD_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a2_hetshield_calib.json")
+DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_v3", "step5_2_multicav_cache")
+DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_v3", "step5_2_multicav_baselines_report.json")
 
 METHODS_ALL = [
     "ego_only",
@@ -436,7 +437,9 @@ def _run_fleet_sequence(
         # 本车物理可见性（优先采用 Fit 标定的新可见性定义 visibility_v2）、单车预测与多车覆盖并集
         ego_pts = load_ego_lidar_np(ds, idx)
         vis_v2 = (auditor.gating_calib or {}).get("visibility_v2", None)
-        fg_prob_tau = float((auditor.gating_calib or {}).get("gating_params", {}).get("fg_prob_tau", 0.20))
+        gparams_cfg = (auditor.gating_calib or {}).get("gating_params", {})
+        fg_prob_tau = float(gparams_cfg.get("fg_prob_tau", 0.20))
+        fg_mode = str(gparams_cfg.get("fg_mode", "v1"))
         sigma_alea, los_f, exp_pts = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)
         ac = wrapper.model.pyramid_backbone.align_corners
 
@@ -502,7 +505,7 @@ def _run_fleet_sequence(
                 dev_ci, d_drop_ci, d_add_ci, cov_ci, p_pair_ci = extract_single_cav_dev_and_signed(
                     wrapper, f_cur, amat, mods_l, vmask, p_ego_cls, cav_idx=ci, k_tol=5, return_pfused=True
                 )
-                fg_mask_ci = F.max_pool2d(p_pair_ci, kernel_size=3, stride=1, padding=1)[0, 0] > fg_prob_tau
+                fg_mask_ci = build_fg_mask(p_ego_cls, p_pair_ci, per_cav_vidx[ci], fg_prob_tau=fg_prob_tau, mode=fg_mode)
                 ar_ci = auditor.audit_dev_maps(
                     dev_ci, cov_ci, per_cav_didx[ci], per_cav_vidx[ci], mod_ci,
                     build_gate=True, d_drop_tol=d_drop_ci, d_add_tol=d_add_ci,

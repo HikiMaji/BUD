@@ -33,6 +33,7 @@ if PROJ_ROOT not in sys.path:
 from src_v2_mm.bud_fusion_heal import (
     BUDFusionHEALAuditor,
     build_directional_gate_map,
+    build_fg_mask,
     build_gated_fuse_fn,
     compute_shift_tolerant_semantic_maps,
 )
@@ -62,9 +63,9 @@ from src_v2_mm.step4_1_v2_core import (
 )
 
 DEFAULT_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_split_plan.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_frozen_calibrator.json")
+DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a1_fit_base_calibrator.json")
 DEFAULT_OLD_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_2_bud_gating_calibrator.json")
-DEFAULT_OUT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_4_bud_frozen_calibrator.json")
+DEFAULT_OUT = os.path.join(PROJ_ROOT, "results_v3", "step4_4_bud_frozen_calibrator.json")
 
 FIT_DEV_STATES = [
     "clean",
@@ -252,7 +253,7 @@ def _eval_fit_dev_candidate(
         sidx = item["sample_idx"]
         b_post = train_utils.to_device(item["batch_slim"], wrapper.device_obj)
         cov_2d = item["cov_2d"].to(wrapper.device_obj)
-        binfo = blind_meta_by_idx[sidx]
+        binfo = blind_meta_by_idx.get((sidx, mod), blind_meta_by_idx.get(sidx))
 
         fuse_fn = None
         used_shortcut = False
@@ -269,7 +270,8 @@ def _eval_fit_dev_candidate(
                 d_drop_tol = item["d_drop_tol"].to(wrapper.device_obj)
                 d_add_tol = item["d_add_tol"].to(wrapper.device_obj)
                 v_idx = item[use_v_idx_key].to(wrapper.device_obj)
-                fg_mask = item["fg_mask"].to(wrapper.device_obj) if "cos_tau_by_vis_fg" in g_params else None
+                fg_key = "fg_mask_old" if use_v_idx_key == "v_idx_old" else "fg_mask"
+                fg_mask = item[fg_key].to(wrapper.device_obj) if "cos_tau_by_vis_fg" in g_params else None
                 if "cos_tau_by_vis_bg" in g_params:
                     cos_tau_bg = g_params["cos_tau_by_vis_bg"][mod]
                     cos_tau_fg = g_params["cos_tau_by_vis_fg"][mod]
@@ -421,6 +423,7 @@ def main():
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--old_gating_json", type=str, default=DEFAULT_OLD_GATING)
     parser.add_argument("--fg_prob_tau", type=float, default=0.20)
+    parser.add_argument("--fg_mode", type=str, default="v1", choices=["v1", "v0"])
     parser.add_argument("--out_json", type=str, default=DEFAULT_OUT)
     args = parser.parse_args()
 
@@ -455,7 +458,6 @@ def main():
 
     for rank, idx in enumerate(fit_indices):
         b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
-        cov_2d = b["cov_ego"][0, 0]
         d_idx = b["d_idx"]
         v_idx_old = b["v_idx"]
         ego_pts = load_ego_lidar_np(ds_m1, idx)
@@ -477,19 +479,22 @@ def main():
                 ego_ps.detach().cpu() if ego_ps is not None else None,
                 ego_gb.detach().cpu(),
             )
-            binfo = _find_blind_gts_for_frame(ds_m1, idx, ego_pb, ego_ps, ego_gb, cov_2d)
-            blind_meta_by_idx[idx] = binfo
+            binfo_m1 = _find_blind_gts_for_frame(ds_m1, idx, ego_pb, ego_ps, ego_gb, b["cov_ego_m1_full"][0, 0])
+            binfo_m2 = _find_blind_gts_for_frame(ds_m1, idx, ego_pb, ego_ps, ego_gb, b["cov_ego"][0, 0])
+            blind_meta_by_idx[(idx, "m1")] = binfo_m1
+            blind_meta_by_idx[(idx, "m2")] = binfo_m2
+            blind_meta_by_idx[idx] = binfo_m2
             # 统计无遮挡盲区车 vs 无遮挡本车清晰命中车的物理预期激光点数，用于 Fit 上客观确定 clear_pts_tau
-            for iy, ix in binfo["blind_yx"]:
+            for iy, ix in binfo_m1["blind_yx"]:
                 if float(los_2d[iy, ix].item()) >= 0.50:
                     unocc_blind_exp_pts.append(float(exp_2d[iy, ix].item()))
-            for iy, ix in binfo["ego_hit_yx"]:
+            for iy, ix in binfo_m1["ego_hit_yx"]:
                 if float(los_2d[iy, ix].item()) >= 0.50:
                     unocc_hit_exp_pts.append(float(exp_2d[iy, ix].item()))
 
         frame_entry = {
             "idx": idx,
-            "cov_2d": cov_2d.detach().cpu(),
+            "p_ego_cls": b["p_ego_cls"].half().cpu(),
             "d_idx": d_idx.detach().cpu(),
             "los_2d": los_2d.detach().cpu(),
             "exp_2d": exp_2d.detach().cpu(),
@@ -498,17 +503,22 @@ def main():
         }
 
         for mod, p_dict in (("m1", b["p1"]), ("m2", b["p2"])):
+            # 主实验口径：m1 在自身完整激光雷达覆盖范围标定与受测，m2 在摄像头有效覆盖区标定与受测
+            cov_ego_mod = b["cov_ego_m1_full"] if mod == "m1" else b["cov_ego"]
+            cov_mod_2d = cov_ego_mod[0, 0]
             dev_c, dd_c, da_c, pf_c = _compute_dev_signed_and_pfused(
-                wrapper, p_dict, p_dict["heter_feature_2d"], b["p_ego_cls"], b["cov_ego"], k_tol=k_tol
+                wrapper, p_dict, p_dict["heter_feature_2d"], b["p_ego_cls"], cov_ego_mod, k_tol=k_tol
             )
-            fg_m_c = _build_collab_fg_mask(pf_c, fg_prob_tau=args.fg_prob_tau)
+            fg_m_old_c = _build_collab_fg_mask(pf_c, fg_prob_tau=args.fg_prob_tau)
             frame_entry["mods"][mod] = {
+                "cov_2d": cov_mod_2d.detach().cpu(),
                 "dev_4ch": dev_c.half().cpu(),
-                "fg_mask": fg_m_c.detach().cpu(),
+                "pf_cls": pf_c.half().cpu(),
+                "fg_mask_old": fg_m_old_c.detach().cpu(),
             }
 
             if is_dev:
-                cov_cpu = cov_2d.detach().cpu()
+                cov_cpu = cov_mod_2d.detach().cpu()
                 v_old_cpu = v_idx_old.detach().cpu()
                 rlen_cpu = p_dict["record_len"].detach().cpu()
                 amat_cpu = p_dict["affine_matrix"].detach().cpu()
@@ -520,13 +530,15 @@ def main():
                     "feat_dev": p_dict["heter_feature_2d"].detach().cpu(),
                     "rlen": rlen_cpu, "amat": amat_cpu, "mods": mods_l,
                     "batch_slim": batch_slim, "cov_2d": cov_cpu,
+                    "p_ego_cls": b["p_ego_cls"].half().cpu(),
+                    "pf_cls": pf_c.half().cpu(),
                     "d_idx": d_idx.detach().cpu(), "v_idx_old": v_old_cpu,
                     "los_2d": los_2d.detach().cpu(), "exp_2d": exp_2d.detach().cpu(),
                     "dist_cav": b["dist_cav"].detach().cpu(),
                     "dev_4ch": dev_c.half().cpu(),
                     "d_drop_tol": dd_c.detach().cpu(),
                     "d_add_tol": da_c.detach().cpu(),
-                    "fg_mask": fg_m_c.detach().cpu(),
+                    "fg_mask_old": fg_m_old_c.detach().cpu(),
                     "atk_mask_2d": None,
                     "atk_valid": True,
                 })
@@ -535,7 +547,7 @@ def main():
                 rlen = p_dict["record_len"]
                 amat = p_dict["affine_matrix"]
                 vmask = p_dict["cam_valid_mask"]
-                preg = b["cov_local_m1"] if mod == "m1" else None
+                preg = None
 
                 f_lr, st_lr = generate_local_removal_heal(
                     wrapper, feat, rlen, amat, mods_l, vmask,
@@ -566,9 +578,9 @@ def main():
                     ("scaled_pgd_1.0sigma", f_p1, None),
                 ):
                     dev_a, dd_a, da_a, pf_a = _compute_dev_signed_and_pfused(
-                        wrapper, p_dict, f_adv, b["p_ego_cls"], b["cov_ego"], k_tol=k_tol
+                        wrapper, p_dict, f_adv, b["p_ego_cls"], cov_ego_mod, k_tol=k_tol
                     )
-                    fg_m_a = _build_collab_fg_mask(pf_a, fg_prob_tau=args.fg_prob_tau)
+                    fg_m_old_a = _build_collab_fg_mask(pf_a, fg_prob_tau=args.fg_prob_tau)
                     atk_m = st_meta["attacked_mask_in_ego"][0, 0].detach().cpu() > 0.5 if st_meta and "attacked_mask_in_ego" in st_meta else None
                     is_v = bool(st_meta is None or (st_meta.get("valid", True) and st_meta.get("num_targets", 1) > 0 and st_meta.get("num_spoof_anchors", 1) > 0))
                     fit_dev_items.append({
@@ -576,13 +588,15 @@ def main():
                         "feat_dev": f_adv.detach().cpu(),
                         "rlen": rlen_cpu, "amat": amat_cpu, "mods": mods_l,
                         "batch_slim": batch_slim, "cov_2d": cov_cpu,
+                        "p_ego_cls": b["p_ego_cls"].half().cpu(),
+                        "pf_cls": pf_a.half().cpu(),
                         "d_idx": d_idx.detach().cpu(), "v_idx_old": v_old_cpu,
                         "los_2d": los_2d.detach().cpu(), "exp_2d": exp_2d.detach().cpu(),
                         "dist_cav": b["dist_cav"].detach().cpu(),
                         "dev_4ch": dev_a.half().cpu(),
                         "d_drop_tol": dd_a.detach().cpu(),
                         "d_add_tol": da_a.detach().cpu(),
-                        "fg_mask": fg_m_a.detach().cpu(),
+                        "fg_mask_old": fg_m_old_a.detach().cpu(),
                         "atk_mask_2d": atk_m,
                         "atk_valid": is_v,
                     })
@@ -621,16 +635,19 @@ def main():
     pix_cos_fg = {m: {v: [] for v in range(3)} for m in ("m1", "m2")}
 
     for fe in fit100_cache:
-        cov_2d = fe["cov_2d"].cuda()
         _, v_new_4d = assign_dist5_vis3_indices_v2(
             fe["dist_cav"].cuda(), fe["los_2d"].view(1, 1, PROTO_H, PROTO_W).cuda(),
             fe["exp_2d"].view(1, 1, PROTO_H, PROTO_W).cuda(), clear_pts_tau=clear_pts_tau, los_occ_tau=0.50
         )
         v_new = v_new_4d[0, 0]
         d_idx = fe["d_idx"].cuda()
+        p_ego_g = fe["p_ego_cls"].cuda().float()
         for mod in ("m1", "m2"):
+            cov_2d = fe["mods"][mod]["cov_2d"].cuda()
             dev_4 = fe["mods"][mod]["dev_4ch"].cuda().float()
-            fg_m = fe["mods"][mod]["fg_mask"].cuda()
+            pf_g = fe["mods"][mod]["pf_cls"].cuda().float()
+            # B2 同步：标定阶段同样使用以本车为准的新前景判定规则
+            fg_m = build_fg_mask(p_ego_g, pf_g, v_new, fg_prob_tau=args.fg_prob_tau, mode=args.fg_mode)
             ar = auditor.audit_dev_maps(dev_4, cov_2d, d_idx, v_new, mod, build_gate=False)
             raw_scores["t2"][mod].append(ar["raw_t2"])
             raw_scores["t4"][mod].append(ar["raw_t4"])
@@ -648,7 +665,7 @@ def main():
         "tier4_sensor_dist_vis": {m: round(max(float(np.percentile(raw_scores["t4"][m], 95.0)), 1e-4), 6) for m in ("m1", "m2")},
     })
 
-    # 为 Fit-Dev 各项补全 v_idx_v2、cos_comb_t4 与新 div_p95 归一化的 score_t4
+    # 为 Fit-Dev 各项补全 v_idx_v2、B2 新前景掩膜 fg_mask、cos_comb_t4 与新 div_p95 归一化的 score_t4
     for it in fit_dev_items:
         cov_2d = it["cov_2d"].cuda()
         d_idx = it["d_idx"].cuda()
@@ -657,8 +674,13 @@ def main():
             it["exp_2d"].view(1, 1, PROTO_H, PROTO_W).cuda(), clear_pts_tau=clear_pts_tau, los_occ_tau=0.50
         )
         v_new = v_new_4d[0, 0]
+        fg_new = build_fg_mask(
+            it["p_ego_cls"].cuda().float(), it["pf_cls"].cuda().float(), v_new,
+            fg_prob_tau=args.fg_prob_tau, mode=args.fg_mode,
+        )
         ar = auditor.audit_dev_maps(it["dev_4ch"].cuda().float(), cov_2d, d_idx, v_new, it["mod"], build_gate=False)
         it["v_idx_v2"] = v_new.detach().cpu()
+        it["fg_mask"] = fg_new.detach().cpu()
         it["cos_comb_t4"] = ar["cos_comb_t4"].detach().cpu()
         it["raw_t4"] = float(ar["raw_t4"])
         it["score_t4"] = float(ar["raw_t4"]) / frame_div_p95["tier4_sensor_dist_vis"][it["mod"]]
@@ -761,6 +783,7 @@ def main():
                         "mode": "directional_vis_fg_bg",
                         "k_tol": k_tol,
                         "fg_prob_tau": float(args.fg_prob_tau),
+                        "fg_mode": str(args.fg_mode),
                         "bg_q": bq,
                         "fg_q": fq,
                         "cos_tau_by_vis_bg": cos_tau_bg,

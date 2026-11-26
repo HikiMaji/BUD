@@ -29,6 +29,7 @@ if PROJ_ROOT not in sys.path:
 
 from src_v2_mm.bud_fusion_heal import (
     BUDFusionHEALAuditor,
+    build_fg_mask,
     build_gated_fuse_fn,
     build_whole_cav_reject_fuse_fn,
     compute_shift_tolerant_semantic_maps,
@@ -64,11 +65,11 @@ from src_v2_mm.step4_1_v2_core import (
 )
 
 DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_frozen_calibrator.json")
+DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a5_base_calibrator.json")
 DEFAULT_OLD_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_2_bud_gating_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_4_bud_frozen_calibrator.json")
-DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_5_seq_cache")
-DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_5_bud_frozen_320_report.json")
+DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_v3", "a5_bud_frozen_calibrator.json")
+DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_v3", "step4_5_seq_cache")
+DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_v3", "step4_5_bud_frozen_320_report.json")
 
 CONDITIONS_9 = [
     "clean",
@@ -240,7 +241,9 @@ def _eval_one_sequence(
 
     t0 = time.time()
     vis_v2 = (auditor.gating_calib or {}).get("visibility_v2", None)
-    fg_prob_tau = float((auditor.gating_calib or {}).get("gating_params", {}).get("fg_prob_tau", 0.20))
+    gparams_cfg = (auditor.gating_calib or {}).get("gating_params", {})
+    fg_prob_tau = float(gparams_cfg.get("fg_prob_tau", 0.20))
+    fg_mode = str(gparams_cfg.get("fg_mode", "v1"))
 
     seq_rec = {
         "seq_name": seq_name,
@@ -395,7 +398,7 @@ def _eval_one_sequence(
                 out_nd, dev_4ch, d_drop, d_add, p_fused_cls = _extract_out_and_dev_maps(
                     wrapper, p_dict, f_cur, b["p_ego_cls"], cov_ego_mod, k_tol=k_tol
                 )
-                fg_mask = F.max_pool2d(p_fused_cls, kernel_size=3, stride=1, padding=1)[0, 0] > fg_prob_tau
+                fg_mask = build_fg_mask(b["p_ego_cls"], p_fused_cls, v_idx, fg_prob_tau=fg_prob_tau, mode=fg_mode)
                 nd_pb, nd_ps, _ = wrapper.decode_boxes(b_post, out_nd, ds_m1)
                 nd_r05 = _match_tp_fp_and_hits(nd_pb, nd_ps, gt_np, gt_polys, 0.5)
                 nd_r07 = _match_tp_fp_and_hits(nd_pb, nd_ps, gt_np, gt_polys, 0.7)
