@@ -111,6 +111,7 @@ def _install_lightweight_cpu_shims():
 _install_lightweight_cpu_shims()
 
 from src_v2_mm import step4_1_v2_core  # noqa: E402
+from src_v2_mm.heal_base_wrapper import ensure_in_order_assignment  # noqa: E402
 from src_v2_mm.a5_split_and_calib_stats import (  # noqa: E402
     FIT_CALIB_SEQ_NAMES_7,
     FIT_TUNE_SEQ_NAMES_4,
@@ -518,6 +519,34 @@ class TestSprintCS2027CPU(unittest.TestCase):
         )
         self.assertAlmostEqual(float(g_00.mean().item()), 1.0, places=5)
         self.assertLess(float(g_02.mean().item()), 0.65)
+
+    def test_ensure_in_order_assignment_auto_refresh_on_new_sequences(self):
+        """[数据适配单测] 当 validate 从旧子集补齐新序列时，自动检测缺失序列并更新模态分配 JSON。"""
+        import json
+        import shutil
+        import tempfile
+
+        tmp_dir = tempfile.mkdtemp(prefix="bud_assign_test_")
+        try:
+            data_root = os.path.join(tmp_dir, "validate")
+            out_json = os.path.join(tmp_dir, "opv2v_val_4modality_in_order.json")
+            for s in ("seqA", "seqB"):
+                os.makedirs(os.path.join(data_root, s, "101"))
+                os.makedirs(os.path.join(data_root, s, "202"))
+            ensure_in_order_assignment(data_root, out_json)
+            with open(out_json, "r", encoding="utf-8") as f:
+                first_map = json.load(f)
+            self.assertEqual(sorted(first_map.keys()), ["seqA", "seqB"])
+
+            # 新增第 3 条序列 seqC，再次调用应自动刷新而非直接返回旧 2 序列缓存
+            os.makedirs(os.path.join(data_root, "seqC", "303"))
+            ensure_in_order_assignment(data_root, out_json)
+            with open(out_json, "r", encoding="utf-8") as f:
+                refreshed_map = json.load(f)
+            self.assertEqual(sorted(refreshed_map.keys()), ["seqA", "seqB", "seqC"])
+            self.assertEqual(refreshed_map["seqC"]["303"], "m1")
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":

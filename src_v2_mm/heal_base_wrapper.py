@@ -97,27 +97,44 @@ def _default_assignment_path_for_dir(data_dir: str) -> str:
 
 
 def ensure_in_order_assignment(data_dir: str, out_json_path: Optional[str] = None) -> str:
-    """按 HEAL 官方 assign_modality_4_in_order 规则生成或复用序列模态分配 JSON。"""
+    """
+    按 HEAL 官方 assign_modality_4_in_order 规则生成或复用序列模态分配 JSON。
+    若已有缓存文件未完整覆盖当前 data_dir 下的全部序列与车辆子目录（如 validate 从 6 序列补齐至 9 序列），
+    自动重新扫描并更新缓存文件，杜绝 KeyError。
+    """
     if out_json_path is None:
         out_json_path = _default_assignment_path_for_dir(data_dir)
-    if os.path.exists(out_json_path) and os.path.getsize(out_json_path) > 10:
-        return out_json_path
 
-    assign = OrderedDict()
-    for seq in sorted(os.listdir(data_dir)):
-        seq_path = os.path.join(data_dir, seq)
-        if not os.path.isdir(seq_path):
-            continue
-        cavs = sorted([c for c in os.listdir(seq_path) if os.path.isdir(os.path.join(seq_path, c))])
-        if cavs and cavs[0] == "-1":
-            cavs = cavs[1:] + cavs[:1]
-        assign[seq] = OrderedDict()
-        for j, cav_id in enumerate(cavs):
-            assign[seq][cav_id] = f"m{j % 4 + 1}"
+    expected = OrderedDict()
+    if os.path.isdir(data_dir):
+        for seq in sorted(os.listdir(data_dir)):
+            seq_path = os.path.join(data_dir, seq)
+            if not os.path.isdir(seq_path):
+                continue
+            cavs = sorted([c for c in os.listdir(seq_path) if os.path.isdir(os.path.join(seq_path, c))])
+            if cavs and cavs[0] == "-1":
+                cavs = cavs[1:] + cavs[:1]
+            expected[seq] = OrderedDict()
+            for j, cav_id in enumerate(cavs):
+                expected[seq][cav_id] = f"m{j % 4 + 1}"
+
+    if os.path.exists(out_json_path) and os.path.getsize(out_json_path) > 10:
+        try:
+            with open(out_json_path, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+            if isinstance(cached, dict) and all(
+                seq in cached and all(cid in cached[seq] for cid in cav_map)
+                for seq, cav_map in expected.items()
+            ):
+                return out_json_path
+        except (OSError, ValueError, TypeError):
+            pass
 
     os.makedirs(os.path.dirname(out_json_path), exist_ok=True)
-    with open(out_json_path, "w", encoding="utf-8") as f:
-        json.dump(assign, f, indent=2)
+    tmp_path = out_json_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(expected, f, indent=2)
+    os.replace(tmp_path, out_json_path)
     return out_json_path
 
 
