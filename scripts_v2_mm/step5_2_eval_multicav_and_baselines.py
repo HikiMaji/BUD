@@ -64,26 +64,30 @@ from src_v2_mm.heal_attacks import (
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
 from src_v2_mm.hetshield_heal import (
     HetShieldHEALDefender,
-    build_hetshield_fuse_fn,
+    forward_hetshield_protocol_mix,
 )
 from src_v2_mm.step4_1_v2_core import (
-    DEFAULT_CLEAR_PTS_TAU,
     DEFAULT_LOS_OCC_TAU,
     GRID_RES,
     MIN_XY,
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_HETSHIELD_CALIB_JSON,
+    V3_SPLITS_JSON,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
     compute_ego_expected_pts_and_los_256,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
 )
 
-DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a5_base_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_v3", "a5_bud_frozen_calibrator.json")
-DEFAULT_HETSHIELD_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a2_hetshield_calib.json")
+DEFAULT_EVAL_SPLIT = V3_SPLITS_JSON
+DEFAULT_BASE_CALIB = V3_BUD_CALIB_V1_JSON
+DEFAULT_FROZEN_GATING = V3_BUD_TUNED_JSON
+DEFAULT_HETSHIELD_CALIB = V3_HETSHIELD_CALIB_JSON
 DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_v3", "step5_2_multicav_cache")
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_v3", "step5_2_multicav_baselines_report.json")
 
@@ -446,12 +450,11 @@ def _run_fleet_sequence(
         per_cav_didx = {}
         per_cav_vidx = {}
         union_cov = torch.zeros((PROTO_H, PROTO_W), device=wrapper.device_obj, dtype=torch.bool)
+        c_tau, l_tau = require_visibility_v2_taus(auditor.gating_calib)
         for ci in range(1, n_total):
             ptm_ci = raw_b["ego"]["pairwise_t_matrix"][0, ci, 0].detach().cpu().numpy()
             cx, cy = float(ptm_ci[0, 3]), float(ptm_ci[1, 3])
             dist_ci = torch.sqrt((gx - cx) ** 2 + (gy - cy) ** 2).view(1, 1, PROTO_H, PROTO_W)
-            c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
-            l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
             d_i, v_i = assign_dist5_vis3_indices_v2(dist_ci, los_f, exp_pts, clear_pts_tau=c_tau, los_occ_tau=l_tau)
             per_cav_didx[ci] = d_i[0, 0]
             per_cav_vidx[ci] = v_i[0, 0]
@@ -602,9 +605,8 @@ def _run_fleet_sequence(
                             honest_fpr_records[rm][fp_k] += 1
                 g_list = [r["g_k"] for r in hs_res]
                 with torch.no_grad():
-                    out_hs = wrapper.forward_from_protocol(
-                        f_cur, rlen, amat, mods_l,
-                        custom_fuse_fn=build_hetshield_fuse_fn(g_list, device=str(wrapper.device_obj))
+                    out_hs = forward_hetshield_protocol_mix(
+                        wrapper, f_cur, rlen, amat, mods_l, vmask, g_list
                     )
                     hpb, hps, _ = wrapper.decode_boxes(b_post, out_hs, ds)
                 _rec(bkey, hs_name, _match_tp_fp_and_hits(hpb, hps, gt_np, gt_polys, 0.5),
@@ -746,7 +748,7 @@ def _aggregate_fleet_caches(seq_order: list, seq_caches: dict) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="步骤 ⑤-2 & 多车队分层主实验（全基线 + 成对 Bootstrap 95% CI）")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--frozen_gating_json", type=str, default=DEFAULT_FROZEN_GATING)

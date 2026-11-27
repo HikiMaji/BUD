@@ -35,7 +35,7 @@ from src_v2_mm.heal_base_wrapper import (
     init_heal_runtime,
     weighted_fuse_safe,
 )
-from src_v2_mm.step4_1_v2_core import PROTO_H, PROTO_W, TRAIN_FULL19_DIR
+from src_v2_mm.step4_1_v2_core import OPV2V_TRAIN_DIR, PROTO_H, PROTO_W
 
 DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step6_m3_probe_report.json")
@@ -157,7 +157,7 @@ def _eval_16frames_ap(model, ds, indices: list, device: torch.device):
 
 def main():
     parser = argparse.ArgumentParser(description="步骤 ⑥ 限时半天探 m3 (32 线 LiDAR SECOND) 可行性诊断")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--num_frames", type=int, default=16)
     parser.add_argument("--out_json", type=str, default=DEFAULT_OUT_JSON)

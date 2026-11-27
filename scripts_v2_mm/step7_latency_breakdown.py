@@ -35,23 +35,27 @@ from src_v2_mm.bud_fusion_heal import (
     extract_single_cav_dev_and_signed,
 )
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
-from src_v2_mm.hetshield_heal import HetShieldHEALDefender, build_hetshield_fuse_fn
+from src_v2_mm.hetshield_heal import HetShieldHEALDefender, forward_hetshield_protocol_mix
 from src_v2_mm.step4_1_v2_core import (
-    DEFAULT_CLEAR_PTS_TAU,
     DEFAULT_LOS_OCC_TAU,
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_HETSHIELD_CALIB_JSON,
+    V3_SPLITS_JSON,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
     compute_ego_expected_pts_and_los_256,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
 )
 
-DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_frozen_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_4_bud_frozen_calibrator.json")
-DEFAULT_HETSHIELD_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_1_hetshield_heal_calib.json")
+DEFAULT_EVAL_SPLIT = V3_SPLITS_JSON
+DEFAULT_BASE_CALIB = V3_BUD_CALIB_V1_JSON
+DEFAULT_FROZEN_GATING = V3_BUD_TUNED_JSON
+DEFAULT_HETSHIELD_CALIB = V3_HETSHIELD_CALIB_JSON
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step7_latency_breakdown.json")
 
 
@@ -81,7 +85,7 @@ def _stat_ms(vals: list) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="步骤 ⑦ 单帧推理耗时拆解（CUDA Event 精确计时）")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--frozen_gating_json", type=str, default=DEFAULT_FROZEN_GATING)
@@ -165,12 +169,11 @@ def main():
         def _step_vis_bin():
             sa, lf, ep = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)
             d_list, v_list = [], []
+            c_tau, l_tau = require_visibility_v2_taus(auditor.gating_calib)
             for ci in range(1, n_total):
                 ptm = raw_b["ego"]["pairwise_t_matrix"][0, ci, 0]
                 cx, cy = float(ptm[0, 3].item()), float(ptm[1, 3].item())
                 dist_ci = torch.sqrt((gx - cx) ** 2 + (gy - cy) ** 2).view(1, 1, PROTO_H, PROTO_W)
-                c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
-                l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
                 di, vi = assign_dist5_vis3_indices_v2(dist_ci, lf, ep, clear_pts_tau=c_tau, los_occ_tau=l_tau)
                 d_list.append(di[0, 0])
                 v_list.append(vi[0, 0])
@@ -222,7 +225,7 @@ def main():
                 c_items.append({"cav_id": f"lat_c{ci}", "mod": mods[ci], "feat_warped": fc, "valid_ego": (vc > 0.5).float()})
             rs = hs_def.step_frame("lat_seq", step_i, feat[0:1], c_items, update_state=True)
             gl = [r["g_k"] for r in rs]
-            return wrapper.forward_from_protocol(feat, rlen, amat, mods, custom_fuse_fn=build_hetshield_fuse_fn(gl, device="cuda"))
+            return forward_hetshield_protocol_mix(wrapper, feat, rlen, amat, mods, vmask, gl)
 
         t_hs, _ = _cuda_time_ms(_step_hs)
 

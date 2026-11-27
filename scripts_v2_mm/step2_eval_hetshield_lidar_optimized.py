@@ -239,8 +239,8 @@ def main():
     res_dir = os.path.join(PROJECT_ROOT, "results_rq1_v2_mm")
     os.makedirs(res_dir, exist_ok=True)
 
-    train_dir = os.path.join(PROJECT_ROOT, "data_links", "opv2v_train")
-    val_dir = os.path.join(PROJECT_ROOT, "data_links", "opv2v_val")
+    train_dir = "/root/autodl-tmp/datasets/OPV2V/train"
+    val_dir = "/root/autodl-tmp/datasets/OPV2V/validate"
 
     print("==================================================================", flush=True)
     print("[Stage 2-LiDAR] HetShield vs HetShield-PerSensor Validation Alignment", flush=True)

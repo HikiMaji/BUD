@@ -26,7 +26,7 @@ if PROJ_ROOT not in sys.path:
 
 from src_v2_mm.eval_stats_utils import decompose_box_center_radial_tangential_error
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
-from src_v2_mm.step4_1_v2_core import TRAIN_FULL19_DIR
+from src_v2_mm.step4_1_v2_core import OPV2V_TRAIN_DIR
 
 DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step6_aniso_box_error_stats.json")
@@ -54,7 +54,7 @@ def _fit_quad_and_lin(dists: np.ndarray, sigmas: np.ndarray):
 
 def main():
     parser = argparse.ArgumentParser(description="m1/m2 干净数据检测框中心径向与横向误差分档统计与拟合")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--max_match_dist", type=float, default=4.0)
     parser.add_argument("--out_json", type=str, default=DEFAULT_OUT_JSON)

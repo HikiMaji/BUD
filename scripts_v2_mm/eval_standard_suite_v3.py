@@ -67,28 +67,27 @@ from src_v2_mm.sprint_metrics_v3 import (
     studentized_paired_block_bootstrap,
 )
 from src_v2_mm.step4_1_v2_core import (
-    DEFAULT_CLEAR_PTS_TAU,
     DEFAULT_LOS_OCC_TAU,
     GRID_RES,
     MIN_XY,
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_SPLITS_JSON,
     _masked_avg_pool3x3,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
     extract_frame_context_and_clean,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
 )
 
 RES_V3_DIR = os.path.join(PROJ_ROOT if os.path.exists(PROJ_ROOT) else LOCAL_ROOT, "results_v3")
-DEFAULT_EVAL_SPLIT = os.path.join(
-    PROJ_ROOT if os.path.exists(PROJ_ROOT) else LOCAL_ROOT,
-    "results_rq1_v2_mm",
-    "step4_3_eval320_split.json",
-)
-DEFAULT_BASE_CALIB = os.path.join(RES_V3_DIR, "a5_base_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(RES_V3_DIR, "a5_bud_frozen_calibrator.json")
+DEFAULT_EVAL_SPLIT = V3_SPLITS_JSON
+DEFAULT_BASE_CALIB = V3_BUD_CALIB_V1_JSON
+DEFAULT_FROZEN_GATING = None  # 默认使用 --base_calib_json 自包含标定表，仅当显式传入时覆盖
 
 ATTACKS_5 = (
     "pgd_1.0sigma",
@@ -256,12 +255,10 @@ def _run_b4_gamma_scan(args, wrapper, ds_m1, ds_m2, eval_split: dict, auditor: B
 
     t0 = time.time()
     seq_order = list(eval_split["seq_order"])
-    vis_v2 = (auditor.gating_calib or {}).get("visibility_v2", None)
     gcfg = (auditor.gating_calib or {}).get("gating_params", {})
     fg_prob_tau = float(gcfg.get("fg_prob_tau", 0.20))
-    fg_mode = str(gcfg.get("fg_mode", "v1"))
-    c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
-    l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
+    fg_mode = str(gcfg.get("fg_mode", gcfg.get("fg_rule", "v1")))
+    c_tau, l_tau = require_visibility_v2_taus(auditor.gating_calib)
 
     gammas = [float(g) for g in B4_GAMMA_CANDIDATES]
     # 按序列累积盲区 AP 与遮挡伪造 ASR
@@ -374,6 +371,7 @@ def _run_b4_gamma_scan(args, wrapper, ds_m1, ds_m2, eval_split: dict, auditor: B
 
     out_report = OrderedDict({
         "meta": {
+            "claim": "[临时结论 · 待人工代码复核]",
             "task": "B4_gamma_occluded_tradeoff_scan",
             "candidates": gammas,
             "s_min": float(args.s_min),
@@ -408,12 +406,10 @@ def _run_standard_or_vismask_eval(args, wrapper, ds_m1, ds_m2, ds_mix, eval_spli
     methods = ("no_defense", meth_tag)
 
     seq_order = list(eval_split["seq_order"])
-    vis_v2 = (auditor.gating_calib or {}).get("visibility_v2", None)
     gcfg = (auditor.gating_calib or {}).get("gating_params", {})
     fg_prob_tau = float(gcfg.get("fg_prob_tau", 0.20))
-    fg_mode = str(args.fg_mode if args.fg_mode else gcfg.get("fg_mode", "v1"))
-    c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
-    l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
+    fg_mode = str(args.fg_mode if args.fg_mode else gcfg.get("fg_mode", gcfg.get("fg_rule", "v1")))
+    c_tau, l_tau = require_visibility_v2_taus(auditor.gating_calib)
 
     ap50_seq = {mt: {m: {s: {"tp": [], "fp": [], "score": [], "gt": 0} for s in seq_order} for m in ("m1", "m2")} for mt in methods}
     ap70_seq = {mt: {m: {s: {"tp": [], "fp": [], "score": [], "gt": 0} for s in seq_order} for m in ("m1", "m2")} for mt in methods}
@@ -643,6 +639,7 @@ def _run_standard_or_vismask_eval(args, wrapper, ds_m1, ds_m2, ds_mix, eval_spli
 
     out_report = OrderedDict({
         "meta": {
+            "claim": "[临时结论 · 待人工代码复核]",
             "mode": args.mode,
             "method_tag": meth_tag,
             "downsample_mode": args.downsample_mode,
@@ -665,11 +662,44 @@ def _run_standard_or_vismask_eval(args, wrapper, ds_m1, ds_m2, ds_mix, eval_spli
     print(f"\n[完成] A0.4 标准指标报告已保存至 {args.out_json}")
 
 
+def _resolve_eval_subset(raw_split: dict, subset_name: str, max_frames: Optional[int] = None) -> dict:
+    """兼容 splits_v3.json (subsets[subset_name]) 与单子集 JSON，支持 'indices' 与 'sampled_indices' 及 --max_frames 截断。"""
+    if "subsets" in raw_split and subset_name in raw_split["subsets"]:
+        sub = raw_split["subsets"][subset_name]
+        seq_map = sub["sequences"]
+        seq_order = list(sub.get("seq_order", list(seq_map.keys())))
+        seqs = OrderedDict(
+            (s, {"indices": list(seq_map[s].get("indices", seq_map[s].get("sampled_indices", [])))})
+            for s in seq_order
+        )
+    else:
+        seq_order = list(raw_split["seq_order"])
+        seqs = OrderedDict(
+            (s, {"indices": list(raw_split["sequences"][s].get("indices", raw_split["sequences"][s].get("sampled_indices", [])))})
+            for s in seq_order
+        )
+
+    if max_frames is not None and int(max_frames) > 0:
+        rem = int(max_frames)
+        slim_seqs = OrderedDict()
+        for s in seq_order:
+            if rem <= 0:
+                break
+            take = seqs[s]["indices"][:rem]
+            if take:
+                slim_seqs[s] = {"indices": take}
+                rem -= len(take)
+        return {"seq_order": list(slim_seqs.keys()), "sequences": slim_seqs}
+    return {"seq_order": seq_order, "sequences": seqs}
+
+
 def main():
     parser = argparse.ArgumentParser(description="sprint-cs2027 统一标准指标评测与 B4 扫描")
     parser.add_argument("--mode", type=str, default="standard_eval", choices=["standard_eval", "b4_gamma_scan", "vis_mask_baseline"])
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
+    parser.add_argument("--subset", type=str, default="dev_fast", help="从 splits_v3.json 读取的子集名 (dev_fast / dev_full)")
+    parser.add_argument("--max_frames", type=int, default=0, help=">0 时仅跑前 N 帧供冒烟测试使用")
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--frozen_gating_json", type=str, default=DEFAULT_FROZEN_GATING)
     parser.add_argument("--downsample_mode", type=str, default="min_pool", choices=["min_pool", "area"])
@@ -680,7 +710,8 @@ def main():
     args = parser.parse_args()
 
     with open(args.eval_split_json, "r", encoding="utf-8") as f:
-        eval_split = json.load(f)
+        raw_split = json.load(f)
+    eval_split = _resolve_eval_subset(raw_split, args.subset, max_frames=args.max_frames if args.max_frames > 0 else None)
 
     wrapper = HEALBaseWrapper(device="cuda", use_cav=7)
     ds_m1 = wrapper.build_dataset(data_dir=args.data_dir, use_cav=2, visualize=True, collab_modality="m1")

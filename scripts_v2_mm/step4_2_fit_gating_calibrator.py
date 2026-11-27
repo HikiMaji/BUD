@@ -38,12 +38,13 @@ from src_v2_mm.heal_attacks import (
 )
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
 from src_v2_mm.step4_1_v2_core import (
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
     _masked_avg_pool3x3,
     build_bev_grid_xy_256,
     extract_frame_context_and_clean,
+    require_visibility_v2_taus,
 )
 
 DEFAULT_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_split_plan.json")
@@ -213,7 +214,7 @@ def _eval_ap_from_predictions(wrapper, ds_ref, eval_items: list, g_params: dict,
 
 def main():
     parser = argparse.ArgumentParser(description="纯 Fit 标定 BUD-Fusion 局部门控超参与 div_p95 门限")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--split_json", type=str, default=DEFAULT_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--out_json", type=str, default=DEFAULT_OUT)
@@ -243,9 +244,10 @@ def main():
     fit_dev_items = []
     k_tol = 5
 
+    c_tau, l_tau = require_visibility_v2_taus(auditor.base_calib)
     for rank, idx in enumerate(fit_indices):
         assert idx in set(fit_indices) and idx not in eval_set
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         cov_2d = b["cov_ego"][0, 0]
         d_idx = b["d_idx"]
         v_idx = b["v_idx"]

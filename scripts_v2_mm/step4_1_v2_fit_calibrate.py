@@ -465,7 +465,7 @@ def main():
     for rank, idx in enumerate(fit_indices):
         # 代码级零泄露断言：绝不允许读取任何 Eval 索引
         assert idx in fit_idx_set and idx not in eval_idx_set, f"越界读取非 Fit 样本: {idx}"
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=75.0)
         is_dev = idx in fit_dev_set
         is_ho = not is_dev
 

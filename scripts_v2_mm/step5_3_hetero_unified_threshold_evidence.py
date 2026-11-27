@@ -52,9 +52,9 @@ from src_v2_mm.heal_attacks import (
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
 from src_v2_mm.hetshield_heal import HetShieldHEALDefender
 from src_v2_mm.step4_1_v2_core import (
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
     compute_auroc,
@@ -64,12 +64,17 @@ from src_v2_mm.step4_1_v2_core import (
     extract_frame_context_and_clean,
     find_exact_fpr_threshold,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_HETSHIELD_CALIB_JSON,
+    V3_SPLITS_JSON,
 )
 
-DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_frozen_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_4_bud_frozen_calibrator.json")
-DEFAULT_HS_CALIB = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_1_hetshield_heal_calib.json")
+DEFAULT_EVAL_SPLIT = V3_SPLITS_JSON
+DEFAULT_BASE_CALIB = V3_BUD_CALIB_V1_JSON
+DEFAULT_FROZEN_GATING = V3_BUD_TUNED_JSON
+DEFAULT_HS_CALIB = V3_HETSHIELD_CALIB_JSON
 DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_3_seq_cache")
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step5_3_hetero_unified_threshold_evidence.json")
 DEFAULT_OUT_FIG = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "fig_step5_3_hetero_unified_vs_cond.png")
@@ -270,7 +275,7 @@ def _plot_motivation_figure(report: dict, out_fig: str):
 
 def main():
     parser = argparse.ArgumentParser(description="步骤 ⑤-3：异构车队统一判据跨模态误报与检出权衡实证实验")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--frozen_gating_json", type=str, default=DEFAULT_FROZEN_GATING)
@@ -341,9 +346,8 @@ def main():
         luc_mix = {"m1": {"trust": [], "l1": []}, "m2": {"trust": [], "l1": []}}
 
         # Part 1: 2 车成对 (clean + 3 攻击 × m1/m2)
+        c_tau, l_tau = require_visibility_v2_taus({"visibility_v2": vis_v2})
         for fi, idx in enumerate(idxs):
-            c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else 73.853
-            l_tau = float(vis_v2.get("los_occ_tau", 0.50)) if vis_v2 is not None else 0.50
             b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
             # 动机实验（表 2 跨模态校准对比）：显式保留共同视野 cov_ego 与 dev_clean_common，确保差异纯来自传感器本身
             cov_2d = b["cov_ego"][0, 0]

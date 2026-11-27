@@ -20,7 +20,22 @@ import torch
 import torch.nn.functional as F
 
 PROJ_ROOT = "/root/autodl-tmp/proj_dir2_hetero_trust"
-TRAIN_FULL19_DIR = os.path.join(PROJ_ROOT, "tmp_png_ab_test", "train_full19_444")
+OPV2V_DATASET_ROOT = "/root/autodl-tmp/datasets/OPV2V"
+OPV2V_TRAIN_DIR = os.path.join(OPV2V_DATASET_ROOT, "train")
+OPV2V_VALIDATE_DIR = os.path.join(OPV2V_DATASET_ROOT, "validate")
+OPV2V_TEST_DIR = os.path.join(OPV2V_DATASET_ROOT, "test")
+OPV2V_TEST_CULVERCITY_DIR = os.path.join(OPV2V_DATASET_ROOT, "test_culvercity")
+# 历史兼容别名（旧 train_full19_444 JPG 已作废，统一指向官方原版 PNG train 目录）
+TRAIN_FULL19_DIR = OPV2V_TRAIN_DIR
+
+# v3 全链路统一标定与调参文件名常量（消除 a5_bud_calibrator vs a5_bud_frozen_calibrator 不一致）
+V3_RESULTS_DIR = os.path.join(PROJ_ROOT, "results_v3")
+V3_SPLITS_JSON = os.path.join(V3_RESULTS_DIR, "splits_v3.json")
+V3_BUD_CALIB_V0_JSON = os.path.join(V3_RESULTS_DIR, "bud_calib_v0.json")
+V3_BUD_CALIB_V1_JSON = os.path.join(V3_RESULTS_DIR, "bud_calib_v1.json")
+V3_BUD_TUNED_JSON = os.path.join(V3_RESULTS_DIR, "bud_tuned_calibrator.json")
+V3_HETSHIELD_CALIB_JSON = os.path.join(V3_RESULTS_DIR, "hetshield_calib_v3.json")
+V3_BASELINES_TUNED_JSON = os.path.join(V3_RESULTS_DIR, "baselines_tuned_thresholds.json")
 
 # 严格互斥序列划分：11 条 Fit 序列（含全部 7 条历史探索序列，2/3/4/5 车齐全，共 2,312 帧）
 FIT_SEQ_NAMES = [
@@ -264,23 +279,75 @@ def compute_ego_beam_visibility_256(
     return sigma_alea_sq
 
 
-DEFAULT_CLEAR_PTS_TAU = 73.853
 DEFAULT_LOS_OCC_TAU = 0.50
+
+
+def require_visibility_v2_taus(calib_dict: dict) -> Tuple[float, float]:
+    """
+    强制从标定 JSON 中读取在当前 PNG 数据集 calib 组标定的 (clear_pts_tau, los_occ_tau)。
+    严禁回退旧 JPG 时代的硬编码默认值 73.853；缺失或非法时立即抛出 ValueError。
+    """
+    if not isinstance(calib_dict, dict):
+        raise ValueError("标定字典为空或类型非法，无法读取 visibility_v2.clear_pts_tau！")
+    vis_v2 = calib_dict.get("visibility_v2", None)
+    if not isinstance(vis_v2, dict) or "clear_pts_tau" not in vis_v2 or vis_v2["clear_pts_tau"] is None:
+        raise ValueError("标定 JSON 缺失 visibility_v2.clear_pts_tau，严禁使用硬编码默认回退值！")
+    c_tau = float(vis_v2["clear_pts_tau"])
+    if not math.isfinite(c_tau) or c_tau <= 0.0:
+        raise ValueError(f"非法的 clear_pts_tau={c_tau}，必须为标定组实测正浮点数！")
+    l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU))
+    return c_tau, l_tau
+
+
+def calibrate_clear_pts_tau_from_samples(
+    unocc_blind_exp_pts: List[float],
+    unocc_hit_exp_pts: List[float],
+    los_occ_tau: float = DEFAULT_LOS_OCC_TAU,
+    excluded_ego_self_cnt: int = 0,
+) -> OrderedDict:
+    """
+    在 PNG 标定组（calib）干净帧上客观标定物理可见性门限 clear_pts_tau（τ_N）：
+    综合无遮挡稀疏盲区目标上分位（p90 * 1.35）与本车清晰命中目标下分位（p25），限幅于物理合理区间 [60, 120]。
+    """
+    if unocc_blind_exp_pts:
+        blind_p50 = float(np.median(unocc_blind_exp_pts))
+        blind_p85 = float(np.percentile(unocc_blind_exp_pts, 85.0))
+        blind_p90 = float(np.percentile(unocc_blind_exp_pts, 90.0))
+        raw_tau = max(blind_p90 * 1.35, 60.0)
+    else:
+        blind_p50, blind_p85, blind_p90 = 0.0, 60.0, 75.0
+        raw_tau = 75.0
+    hit_p25 = float(np.percentile(unocc_hit_exp_pts, 25.0)) if unocc_hit_exp_pts else 75.0
+    clear_pts_tau = round(float(np.clip(max(raw_tau, hit_p25), 60.0, 120.0)), 4)
+    return OrderedDict({
+        "clear_pts_tau": clear_pts_tau,
+        "los_occ_tau": float(los_occ_tau),
+        "calib_unocc_blind_cnt": int(len(unocc_blind_exp_pts)),
+        "calib_unocc_hit_cnt": int(len(unocc_hit_exp_pts)),
+        "calib_unocc_blind_exp_pts_p50": round(blind_p50, 3),
+        "calib_unocc_blind_exp_pts_p85": round(blind_p85, 3),
+        "calib_unocc_blind_exp_pts_p90": round(blind_p90, 3),
+        "calib_unocc_hit_exp_pts_p25": round(hit_p25, 3),
+        "excluded_ego_self_gt_cnt": int(excluded_ego_self_cnt),
+    })
 
 
 def assign_dist5_vis3_indices_v2(
     dist_cav: torch.Tensor,
     los_factor: torch.Tensor,
     expected_pts: torch.Tensor,
-    clear_pts_tau: float = DEFAULT_CLEAR_PTS_TAU,
+    clear_pts_tau: float,
     los_occ_tau: float = DEFAULT_LOS_OCC_TAU,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    全仓库唯一物理可见性与距离分档函数（A1 修复，彻底移除旧 0.33/0.67 版本）：
+    全仓库唯一物理可见性与距离分档函数（A1 修复，彻底移除旧 0.33/0.67 版本与硬编码默认值）：
+    - clear_pts_tau 必须显式传入由当前数据集 calib 组标定的数值；
     - Occluded (2): 前方存在遮挡物（los_factor < los_occ_tau）；
     - Clear    (0): 前方无遮挡（los_factor >= los_occ_tau）且 本车预期激光点数 expected_pts >= clear_pts_tau；
     - Sparse   (1): 前方无遮挡但本车预期激光点数不足（expected_pts < clear_pts_tau）。
     """
+    if clear_pts_tau is None or not math.isfinite(float(clear_pts_tau)) or float(clear_pts_tau) <= 0.0:
+        raise ValueError(f"必须显式传入正数 clear_pts_tau，收到：{clear_pts_tau}")
     d_idx = torch.full_like(dist_cav, 4, dtype=torch.long)
     d_idx[dist_cav < 45.0] = 3
     d_idx[dist_cav < 30.0] = 2
@@ -357,7 +424,7 @@ def extract_frame_context_and_clean(
     idx: int,
     gx: torch.Tensor,
     gy: torch.Tensor,
-    clear_pts_tau: float = DEFAULT_CLEAR_PTS_TAU,
+    clear_pts_tau: float,
     los_occ_tau: float = DEFAULT_LOS_OCC_TAU,
 ) -> dict:
     """

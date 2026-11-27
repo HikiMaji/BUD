@@ -67,4 +67,6 @@ docs/guide_*.md
 /geoip.metadb
 /geosite.dat
 results_v3/*_cache/
+results_v3/_*/
 results_v3/final_opv2v_test_once/cache_*/
+logs/

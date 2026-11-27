@@ -39,8 +39,13 @@ from src_v2_mm.hetshield_heal import HetShieldHEALDefender
 from src_v2_mm.step4_1_v2_core import (
     CHANNEL_NAMES,
     DIST_LABELS_5,
+    OPV2V_TEST_DIR,
+    OPV2V_VALIDATE_DIR,
     PROTO_H,
     PROTO_W,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_HETSHIELD_CALIB_JSON,
     VIS_LABELS_3,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
@@ -48,15 +53,16 @@ from src_v2_mm.step4_1_v2_core import (
     compute_ego_expected_pts_and_los_256,
     extract_frame_context_and_clean,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
 )
 
-VAL_DIR = os.path.join(PROJ_ROOT, "data_links", "opv2v_val")
-TEST_DIR = os.path.join(PROJ_ROOT, "data_links", "opv2v_test")
+VAL_DIR = OPV2V_VALIDATE_DIR
+TEST_DIR = OPV2V_TEST_DIR
 RES_DIR = os.path.join(PROJ_ROOT, "results_v3")
 
-DEFAULT_FIT_BASE = os.path.join(RES_DIR, "a1_fit_base_calibrator.json")
-DEFAULT_FIT_GATING = os.path.join(RES_DIR, "b_frozen_bud_calibrator.json")
-DEFAULT_FIT_HS = os.path.join(RES_DIR, "a2_hetshield_calib.json")
+DEFAULT_FIT_BASE = V3_BUD_CALIB_V1_JSON
+DEFAULT_FIT_GATING = V3_BUD_TUNED_JSON
+DEFAULT_FIT_HS = V3_HETSHIELD_CALIB_JSON
 
 OUT_VAL_BASE = os.path.join(RES_DIR, "c_val_base_calibrator.json")
 OUT_VAL_BUD = os.path.join(RES_DIR, "c_val_bud_calibrator.json")
@@ -132,12 +138,13 @@ def run_val_recalibration(args):
         for c in CHANNEL_NAMES
     }
 
-    vis_v2 = fit_gating.get("visibility_v2", {"clear_pts_tau": 73.853, "los_occ_tau": 0.50})
+    c_tau, l_tau = require_visibility_v2_taus(fit_gating)
+    vis_v2 = {"clear_pts_tau": c_tau, "los_occ_tau": l_tau}
     fg_prob_tau = float(fit_gating.get("gating_params", {}).get("fg_prob_tau", 0.20))
 
     cached_val_maps = []
     for rank, idx in enumerate(val_idxs):
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         ego_pts = load_ego_lidar_np(ds_m1, idx)
         _, los_f, exp_pts = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)
         d_4d, v_4d = assign_dist5_vis3_indices_v2(

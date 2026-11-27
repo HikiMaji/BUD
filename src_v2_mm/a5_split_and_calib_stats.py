@@ -121,7 +121,7 @@ def seq_block_bootstrap_quantiles(
 
 
 def build_hierarchical_channel_stats_with_merging(
-    per_frame_records: List[dict],
+    per_frame_records,
     calib_seq_order: Sequence[str],
     min_frames: int = 20,
     min_grids: int = 100,
@@ -129,14 +129,11 @@ def build_hierarchical_channel_stats_with_merging(
     seed: int = 20261120,
 ) -> Tuple[OrderedDict, dict]:
     """
-    从 7 条标定序列的逐帧记录构造 4 通道统计表（兼容 _get_tier_channel_z 全部键名），
-    并实现 A5 要求的：
-    - 每个 (传感器 × 距离 × 可见性) 分档的 grid_count / frame_count / seq_count；
-    - 样本不足（frame_count < min_frames 或 grid_count < min_grids）时自动去掉距离维，
-      向上一级合并到“传感器 × 可见性”（若仍不足则回退到“传感器”），并写入 merged_bins_log；
-    - 对 p95 / p98 标尺分位提供序列级 Bootstrap 95% CI。
+    从标定序列的逐帧记录（支持 list 或零拷贝可重入生成器函数 callable）构造 4 通道统计表：
+    - 内存安全优化：外层按 4 个通道逐一遍历、finalize 后立即释放当前通道全部像素缓存，峰值内存降低 >75%；
+    - 输出每个 (传感器 × 距离 × 可见性) 分档的 grid_count / frame_count / seq_count 及序列块 Bootstrap 95% CI；
+    - 稀疏桶（frame_count < min_frames 或 grid_count < min_grids）自动向上一级合并并记录 merged_bins_log。
     """
-    # 组织结构: buf[cname][level_key][seq] -> list of 1D arrays; 以及帧/序列计数器
     def _new_bin_tracker():
         return {"by_seq": OrderedDict(), "frames": 0, "seqs": set(), "grids": 0}
 
@@ -147,39 +144,6 @@ def build_hierarchical_channel_stats_with_merging(
         tracker["frames"] += 1
         tracker["seqs"].add(seq_name)
         tracker["grids"] += int(vals_1d.size)
-
-    tr_unified = {c: _new_bin_tracker() for c in CHANNEL_NAMES}
-    tr_sensor = {c: {m: _new_bin_tracker() for m in ("m1", "m2")} for c in CHANNEL_NAMES}
-    tr_sd = {c: {m: {dl: _new_bin_tracker() for dl in DIST_LABELS_5} for m in ("m1", "m2")} for c in CHANNEL_NAMES}
-    tr_sv = {c: {m: {vl: _new_bin_tracker() for vl in VIS_LABELS_3} for m in ("m1", "m2")} for c in CHANNEL_NAMES}
-    tr_sdv = {
-        c: {m: {dl: {vl: _new_bin_tracker() for vl in VIS_LABELS_3} for dl in DIST_LABELS_5} for m in ("m1", "m2")}
-        for c in CHANNEL_NAMES
-    }
-
-    for rec in per_frame_records:
-        seq_n = rec["seq_name"]
-        d_np = rec["d_idx"].numpy()
-        v_np = rec["v_idx"].numpy()
-        for mod in ("m1", "m2"):
-            cov_np = rec["cov_by_mod"][mod].numpy().astype(bool)
-            dev_np = rec[mod].numpy()
-            for ci, cname in enumerate(CHANNEL_NAMES):
-                v_all = dev_np[ci][cov_np]
-                _push(tr_unified[cname], seq_n, v_all)
-                _push(tr_sensor[cname][mod], seq_n, v_all)
-                for vi, vl in enumerate(VIS_LABELS_3):
-                    mv = cov_np & (v_np == vi)
-                    if mv.any():
-                        _push(tr_sv[cname][mod][vl], seq_n, dev_np[ci][mv])
-                for di, dl in enumerate(DIST_LABELS_5):
-                    md = cov_np & (d_np == di)
-                    if md.any():
-                        _push(tr_sd[cname][mod][dl], seq_n, dev_np[ci][md])
-                        for vi, vl in enumerate(VIS_LABELS_3):
-                            mdv = md & (v_np == vi)
-                            if mdv.any():
-                                _push(tr_sdv[cname][mod][dl][vl], seq_n, dev_np[ci][mdv])
 
     def _finalize_tracker(tr: dict, with_ci: bool = False) -> dict:
         if tr["grids"] == 0:
@@ -215,12 +179,47 @@ def build_hierarchical_channel_stats_with_merging(
     out_stats = OrderedDict()
     merged_bins_log = []
 
-    for cname in CHANNEL_NAMES:
+    for ci, cname in enumerate(CHANNEL_NAMES):
+        tr_unified = _new_bin_tracker()
+        tr_sensor = {m: _new_bin_tracker() for m in ("m1", "m2")}
+        tr_sd = {m: {dl: _new_bin_tracker() for dl in DIST_LABELS_5} for m in ("m1", "m2")}
+        tr_sv = {m: {vl: _new_bin_tracker() for vl in VIS_LABELS_3} for m in ("m1", "m2")}
+        tr_sdv = {
+            m: {dl: {vl: _new_bin_tracker() for vl in VIS_LABELS_3} for dl in DIST_LABELS_5}
+            for m in ("m1", "m2")
+        }
+
+        records_iter = per_frame_records() if callable(per_frame_records) else per_frame_records
+        for rec in records_iter:
+            seq_n = rec["seq_name"]
+            d_np = rec["d_idx"].numpy() if hasattr(rec["d_idx"], "numpy") else np.asarray(rec["d_idx"])
+            v_np = rec["v_idx"].numpy() if hasattr(rec["v_idx"], "numpy") else np.asarray(rec["v_idx"])
+            for mod in ("m1", "m2"):
+                cov_raw = rec["cov_by_mod"][mod]
+                cov_np = (cov_raw.numpy() if hasattr(cov_raw, "numpy") else np.asarray(cov_raw)).astype(bool)
+                dev_raw = rec[mod]
+                ch_2d = (dev_raw[ci].numpy() if hasattr(dev_raw, "numpy") else np.asarray(dev_raw)[ci]).astype(np.float32, copy=False)
+                v_all = ch_2d[cov_np]
+                _push(tr_unified, seq_n, v_all)
+                _push(tr_sensor[mod], seq_n, v_all)
+                for vi, vl in enumerate(VIS_LABELS_3):
+                    mv = cov_np & (v_np == vi)
+                    if mv.any():
+                        _push(tr_sv[mod][vl], seq_n, ch_2d[mv])
+                for di, dl in enumerate(DIST_LABELS_5):
+                    md = cov_np & (d_np == di)
+                    if md.any():
+                        _push(tr_sd[mod][dl], seq_n, ch_2d[md])
+                        for vi, vl in enumerate(VIS_LABELS_3):
+                            mdv = md & (v_np == vi)
+                            if mdv.any():
+                                _push(tr_sdv[mod][dl][vl], seq_n, ch_2d[mdv])
+
         st_c = OrderedDict()
-        st_c["unified"] = _finalize_tracker(tr_unified[cname], with_ci=False)
-        st_c["sensor"] = OrderedDict({m: _finalize_tracker(tr_sensor[cname][m], with_ci=True) for m in ("m1", "m2")})
+        st_c["unified"] = _finalize_tracker(tr_unified, with_ci=False)
+        st_c["sensor"] = OrderedDict({m: _finalize_tracker(tr_sensor[m], with_ci=True) for m in ("m1", "m2")})
         st_c["sensor_vis"] = OrderedDict({
-            m: OrderedDict({vl: _finalize_tracker(tr_sv[cname][m][vl], with_ci=True) for vl in VIS_LABELS_3})
+            m: OrderedDict({vl: _finalize_tracker(tr_sv[m][vl], with_ci=True) for vl in VIS_LABELS_3})
             for m in ("m1", "m2")
         })
         st_c["sensor_dist"] = OrderedDict()
@@ -230,7 +229,7 @@ def build_hierarchical_channel_stats_with_merging(
             st_c["sensor_dist"][m] = OrderedDict()
             st_c["sensor_dist_vis"][m] = OrderedDict()
             for dl in DIST_LABELS_5:
-                tr_d = tr_sd[cname][m][dl]
+                tr_d = tr_sd[m][dl]
                 if tr_d["frames"] < int(min_frames) or tr_d["grids"] < int(min_grids):
                     fb = OrderedDict(st_c["sensor"][m])
                     fb["merged_from"] = f"sensor[{m}]"
@@ -250,9 +249,8 @@ def build_hierarchical_channel_stats_with_merging(
 
                 st_c["sensor_dist_vis"][m][dl] = OrderedDict()
                 for vl in VIS_LABELS_3:
-                    tr_dv = tr_sdv[cname][m][dl][vl]
+                    tr_dv = tr_sdv[m][dl][vl]
                     if tr_dv["frames"] < int(min_frames) or tr_dv["grids"] < int(min_grids):
-                        # A5 规范：样本太少的分档向上一级合并（去掉距离维 -> 传感器×可见性；若仍不足 -> 传感器）
                         sv_parent = st_c["sensor_vis"][m][vl]
                         if sv_parent["frame_count"] >= int(min_frames) and sv_parent["grid_count"] >= int(min_grids):
                             fb = OrderedDict(sv_parent)
@@ -278,6 +276,8 @@ def build_hierarchical_channel_stats_with_merging(
                         st_c["sensor_dist_vis"][m][dl][vl] = _finalize_tracker(tr_dv, with_ci=True)
 
         out_stats[cname] = st_c
+        # 立即释放当前通道的临时像素缓冲
+        del tr_unified, tr_sensor, tr_sd, tr_sv, tr_sdv
 
     meta_diag = {
         "min_frames_threshold": int(min_frames),

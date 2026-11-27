@@ -32,8 +32,9 @@ from src_v2_mm.heal_attacks import (
     generate_scaled_pgd_removal_heal,
 )
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
+from src_v2_mm.step4_1_v2_core import OPV2V_TRAIN_DIR
 
-TRAIN_READY_DIR = os.path.join(PROJ_ROOT, "tmp_png_ab_test", "train_ready_444")
+TRAIN_READY_DIR = OPV2V_TRAIN_DIR
 OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_visibility_spike_4tier_report.json")
 OUT_FIG_HEAT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "fig_step4_1_visibility_distance_heatmap.png")
 OUT_FIG_4TIER = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "fig_step4_1_4tier_threshold_comparison.png")

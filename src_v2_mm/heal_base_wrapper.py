@@ -37,15 +37,19 @@ BOX_OVERLAPS_SO = os.path.join(
     "box_overlaps.cpython-38-x86_64-linux-gnu.so",
 )
 FINAL_INFER_DIR = os.path.join(PROJ_ROOT, "checkpoints_v2_mm", "heal_official", "final_infer")
-DEFAULT_VAL_DIR = os.path.join(PROJ_ROOT, "data_links", "opv2v_val")
+DEFAULT_VAL_DIR = "/root/autodl-tmp/datasets/OPV2V/validate"
 DEFAULT_IN_ORDER_JSON = os.path.join(PROJ_ROOT, "tmp_png_ab_test", "opv2v_val_4modality_in_order.json")
 
 _ENV_INITIALIZED = False
 
 
 def init_heal_runtime() -> dict:
-    """初始化 HEAL 运行时：校验依赖版本、注入 box_overlaps 扩展及 .jpg 内存兼容补丁。"""
+    """初始化 HEAL 运行时：限制 OpenMP 过度线程自旋、校验依赖版本、注入 box_overlaps 扩展及 .jpg 内存兼容补丁。"""
     global _ENV_INITIALIZED
+    for env_k in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        os.environ.setdefault(env_k, "4")
+    if torch.get_num_threads() > 8:
+        torch.set_num_threads(4)
     env_info = assert_heal_env("0.7.0")
     if _ENV_INITIALIZED:
         return env_info

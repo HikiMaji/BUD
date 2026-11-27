@@ -47,6 +47,7 @@ from src_v2_mm.step4_1_v2_core import (
     compute_raw_frame_score_from_dev,
     extract_frame_context_and_clean,
     find_exact_fpr_threshold,
+    require_visibility_v2_taus,
 )
 
 OUT_DIR = os.path.join(CORE_ROOT, "results_rq1_v2_mm")
@@ -294,8 +295,9 @@ def main():
         for mod in ("m1", "m2")
     }
 
+    c_tau, l_tau = require_visibility_v2_taus(calib)
     for rank, idx in enumerate(eval_indices):
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         cov_2d = b["cov_ego"][0, 0]
         d_idx = b["d_idx"]
         v_idx = b["v_idx"]

@@ -27,10 +27,14 @@ def cp_defense_lucia_heal(
     aligned_features: torch.Tensor,
     compression_ratio: int = 32,
     eps: float = 1e-8,
+    l1_threshold: Optional[float] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    官方 LUCIA 核心公式（与 WiSeR-Lab__SOMBRA_LUCIA/defense/defender.py 逐行一致）：
+    官方 LUCIA 核心公式（与 WiSeR-Lab__SOMBRA_LUCIA/defense/defender.py 一致，并支持调参组阈值搜索）：
     输入 aligned_features: (N, C, H, W)，第 0 项为可信本车 ego，1..N-1 为已对齐到本车系的协作者。
+    - 当 l1_threshold is None 时：使用原版无阈值软信任 trust = 1 - softmax(l1_scores)；
+    - 当传入在 select 组搜索得到的阈值 l1_threshold 时：计算每辆协作者的平均成对归一化 L1 距离 d_k，
+      若 d_k <= l1_threshold 保持完全信任 1.0（保护诚实异构协作者），若 d_k > l1_threshold 则剔除隔离 (trust=0.0)。
     返回 (trust_scores: (N,), l1_scores_raw: (N,))。
     """
     feats = aligned_features.detach()
@@ -52,6 +56,14 @@ def cp_defense_lucia_heal(
                 dist = torch.sum(torch.abs(normalized[i] - normalized[j]))
                 l1_scores[i] = l1_scores[i] + dist
                 l1_scores[j] = l1_scores[j] + dist
+        # 归一化为每对平均 L1 距离，使阈值在不同车数下物理量纲一致
+        if l1_threshold is not None:
+            l1_scores = l1_scores / float(max(1, n - 1))
+
+    if l1_threshold is not None:
+        trust = (l1_scores <= float(l1_threshold)).to(dtype=feats.dtype)
+        trust[0] = 1.0
+        return trust, l1_scores
 
     l1_scores[0] = torch.min(l1_scores)
     trust = 1.0 - F.softmax(l1_scores, dim=0)
@@ -61,6 +73,7 @@ def cp_defense_lucia_heal(
 def build_lucia_fuse_fn(
     compression_ratio: int = 32,
     trust_override: Optional[torch.Tensor] = None,
+    l1_threshold: Optional[float] = None,
 ) -> Callable:
     """
     将 LUCIA 信任得分嵌入 HEAL 金字塔多尺度融合：
@@ -106,7 +119,9 @@ def build_lucia_fuse_fn(
                     if trust_override is not None:
                         trust = trust_override.to(device=feat_ego.device, dtype=feat_ego.dtype)
                     else:
-                        trust, _ = cp_defense_lucia_heal(feat_ego, compression_ratio=compression_ratio)
+                        trust, _ = cp_defense_lucia_heal(
+                            feat_ego, compression_ratio=compression_ratio, l1_threshold=l1_threshold
+                        )
                     cached_trust[b] = trust
                     if b == 0:
                         diag_trust = [float(v) for v in trust.detach().cpu().tolist()]

@@ -31,8 +31,9 @@ if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
+from src_v2_mm.step4_1_v2_core import OPV2V_TRAIN_DIR
 
-TRAIN_READY_DIR = os.path.join(PROJ_ROOT, "tmp_png_ab_test", "train_ready_444")
+TRAIN_READY_DIR = OPV2V_TRAIN_DIR
 OUT_JSON = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_pre_benign_deviation_stats.json")
 OUT_PNG = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "fig_step4_pre_benign_deviation_by_dist.png")
 

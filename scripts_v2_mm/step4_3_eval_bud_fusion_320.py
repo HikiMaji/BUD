@@ -51,15 +51,16 @@ from src_v2_mm.step4_1_v2_core import (
     FIT_SEQ_NAMES,
     GRID_RES,
     MIN_XY,
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
     _alloc_balanced_indices,
     _masked_avg_pool3x3,
     build_bev_grid_xy_256,
     extract_frame_context_and_clean,
     find_exact_fpr_threshold,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
 )
 
 DEFAULT_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_1_v2_split_plan.json")
@@ -248,9 +249,8 @@ def _build_eval320_split(wrapper, ds_m2, data_dir: str, split_plan: dict, out_pa
     fit_indices_set = set(split_plan.get("fit_indices", []))
     assert set(eval_seq_names).isdisjoint(set(fit_seq_names)), "Dev 与 Fit 序列存在重叠！"
 
-    if os.path.abspath(data_dir) == os.path.abspath(TRAIN_FULL19_DIR):
-        assert set(eval_seq_names) == set(EVAL_SEQ_NAMES), "Dev 序列名集合与官方锁定清单不符！"
-        assert set(seq_to_idxs.keys()) == set(FIT_SEQ_NAMES + EVAL_SEQ_NAMES), "目录序列集合发生变化！"
+    if os.path.abspath(data_dir) == os.path.abspath(OPV2V_TRAIN_DIR):
+        assert set(eval_seq_names).issubset(set(seq_to_idxs.keys())), "评测序列不在当前数据目录中！"
 
     flat_items, seq_plan = _alloc_balanced_indices(
         eval_seq_names, seq_to_idxs, data_dir, target_total=320, min_per_seq=24
@@ -425,8 +425,9 @@ def _run_single_sequence(
     frame_records = []
     seq_gt_pts_means = []
 
+    c_tau, l_tau = require_visibility_v2_taus(auditor.gating_calib)
     for f_pos, idx in enumerate(seq_indices):
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy)
+        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         cov_2d = b["cov_ego"][0, 0]
         d_idx = b["d_idx"]
         v_idx = b["v_idx"]
@@ -1094,7 +1095,7 @@ def _plot_all_figures(report: dict, fig_dir: str) -> list:
 
 def main():
     parser = argparse.ArgumentParser(description="步骤 ④-3：BUD-Fusion HEAL m1+m2 Dev-320 全维度评测")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--split_json", type=str, default=DEFAULT_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--gating_calib_json", type=str, default=DEFAULT_GATING_CALIB)

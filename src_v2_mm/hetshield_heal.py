@@ -270,73 +270,149 @@ class HetShieldHEALDefender(nn.Module):
         return results
 
 
-def build_hetshield_fuse_fn(g_list: Sequence[float], device: str = "cuda"):
+def mix_hetshield_protocol_features_ego(
+    heter_feature_2d: torch.Tensor,
+    record_len: torch.Tensor,
+    affine_matrix: torch.Tensor,
+    cam_valid_mask: torch.Tensor,
+    g_list: Sequence[float],
+    align_corners: bool = False,
+) -> Tuple[torch.Tensor, torch.Tensor, List[float]]:
     """
-    A2 严格按 HetShield 原论文复现特征混合缓解（而非直接缩放融合权重）：
-    在本车 ego 对齐空间中，将每辆协作车特征按信任门 g_k 往本车特征 z_0 方向线性混合：
-        z_tilde_k = g_k * z_k + (1 - g_k) * z_0
-    再通过该尺度原生 single_head 重新计算混合特征对应的占用分数，并执行标准加权融合。
+    严格对照 HetShield 原论文 Sec 3.2 - Sec 3.4：
+    仅在接收端进入多尺度金字塔（pyramid_backbone）之前的**传输协议特征层**执行唯一一次线性混合！
+      1. 将各车协议特征 f_k 与有效掩膜 cam_valid_mask 对齐到本车 ego 坐标系，得 z_k 与 valid_ego_k；
+      2. 对协作车 k >= 1，按信任门 g_k 往本车特征 z_0 线性混合一次：
+           z_tilde_k = g_k * z_k + (1 - g_k) * z_0
+      3. 返回混合后的协议特征 (N_total, C, H, W) 与对齐后的有效掩膜 (N_total, 1, H, W)，
+         后续进入金字塔 L0/L1/L2 时走原生多尺度骨干与加权融合，绝不在金字塔每一层重复混合。
     """
     from opencood.models.fuse_modules.fusion_in_one import regroup
     from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
 
     g_clamped = [float(max(0.0, min(1.0, g))) for g in g_list]
+    _, _, h, w = heter_feature_2d.shape
+    batch_size = affine_matrix.shape[0]
+    split_feat = regroup(heter_feature_2d, record_len)
+    split_vmask = regroup(cam_valid_mask.to(dtype=heter_feature_2d.dtype), record_len)
 
-    def _hs_feature_mix_fuse(
-        feature_list,
-        score_list,
-        occ_map_list,
-        record_len,
-        affine_matrix,
-        agent_modality_list,
-        wrapper,
-    ):
-        pyramid = wrapper.model.pyramid_backbone
-        align_corners = pyramid.align_corners
-        num_levels = len(feature_list)
-        fused_feature_list = []
+    mixed_batches = []
+    valid_batches = []
+    cav_cursor = 0
 
-        for lvl in range(num_levels):
-            x = feature_list[lvl]
-            score = score_list[lvl]
-            _, _, h, w = x.shape
-            batch_size = affine_matrix.shape[0]
-            split_x = regroup(x, record_len)
-            split_score = regroup(score, record_len)
-            single_head = getattr(pyramid, f"single_head_{lvl}", None)
-            out_b = []
+    for b in range(batch_size):
+        n_cav = int(record_len[b].item()) if torch.is_tensor(record_len[b]) else int(record_len[b])
+        t_mat = affine_matrix[b, 0, :n_cav, :, :]
+        feat_ego = warp_affine_simple(split_feat[b], t_mat, (h, w), align_corners=align_corners)
+        vmask_ego = warp_affine_simple(split_vmask[b], t_mat, (h, w), align_corners=align_corners) > 0.5
+        vmask_ego_f = vmask_ego.to(dtype=heter_feature_2d.dtype)
 
-            for b in range(batch_size):
-                n_cav = int(record_len[b].item()) if torch.is_tensor(record_len[b]) else int(record_len[b])
-                t_mat = affine_matrix[b, 0, :n_cav, :, :]
-                feat_ego = warp_affine_simple(split_x[b], t_mat, (h, w), align_corners=align_corners)
-                score_ego = warp_affine_simple(split_score[b], t_mat, (h, w), align_corners=align_corners)
+        if n_cav > 1:
+            n_col = n_cav - 1
+            if len(g_clamped) == 1 and n_col > 1 and batch_size == 1:
+                gs = g_clamped * n_col
+            else:
+                gs = g_clamped[cav_cursor : cav_cursor + n_col]
+                if len(gs) < n_col:
+                    gs = list(gs) + [1.0] * (n_col - len(gs))
+            cav_cursor += n_col
 
-                if n_cav > 1:
-                    if len(g_clamped) == 1 and n_cav - 1 > 1:
-                        gs = g_clamped * (n_cav - 1)
-                    else:
-                        gs = g_clamped[: n_cav - 1]
-                    g_vec = torch.tensor(gs, device=feat_ego.device, dtype=feat_ego.dtype).view(n_cav - 1, 1, 1, 1)
-                    z0 = feat_ego[0:1]
-                    # 原论文公式：z_tilde_k = g_k * z_k + (1 - g_k) * z_0（仅在协作者有效传输域内生效）
-                    valid_k = score_ego[1:] > 0.0
-                    z_collab_mix = g_vec * feat_ego[1:] + (1.0 - g_vec) * z0
-                    feat_ego = torch.cat([z0, z_collab_mix], dim=0)
-                    if single_head is not None:
-                        occ_mix = single_head(z_collab_mix)
-                        sc_mix = (torch.sigmoid(occ_mix) + 1e-4) * valid_k.to(feat_ego.dtype)
-                        score_ego = torch.cat([score_ego[0:1], sc_mix], dim=0)
+            g_vec = torch.tensor(gs, device=feat_ego.device, dtype=feat_ego.dtype).view(n_col, 1, 1, 1)
+            z0 = feat_ego[0:1]
+            # 仅在传输协议层混合一次：z_tilde_k = g_k * z_k + (1 - g_k) * z_0
+            z_collab_mix = g_vec * feat_ego[1:] + (1.0 - g_vec) * z0
+            feat_ego = torch.cat([z0, z_collab_mix], dim=0)
 
-                valid = score_ego > 0.0
-                any_valid = valid.any(dim=0, keepdim=True)
-                safe_logits = torch.where(valid, score_ego, torch.full_like(score_ego, -1e4))
-                safe_logits = torch.where(any_valid, safe_logits, torch.zeros_like(safe_logits))
-                weights = torch.softmax(safe_logits, dim=0) * any_valid.to(score_ego.dtype)
-                out_b.append(torch.sum(feat_ego * weights, dim=0))
+        mixed_batches.append(feat_ego)
+        valid_batches.append(vmask_ego_f)
 
-            fused_feature_list.append(torch.stack(out_b, dim=0))
+    return torch.cat(mixed_batches, dim=0), torch.cat(valid_batches, dim=0), g_clamped
 
-        return fused_feature_list, {"hetshield_g_list": g_clamped}
 
-    return _hs_feature_mix_fuse
+def forward_hetshield_protocol_mix(
+    wrapper,
+    heter_feature_2d: torch.Tensor,
+    record_len: torch.Tensor,
+    affine_matrix: torch.Tensor,
+    agent_modality_list: Sequence[str],
+    cam_valid_mask: torch.Tensor,
+    g_list: Sequence[float],
+) -> dict:
+    """
+    HetShield 标准前向推理：
+    1. 在进入 pyramid_backbone 之前的传输协议特征层执行单次混合 z_tilde_k = g_k * z_k + (1 - g_k) * z_0；
+    2. 将混合后的 ego 系协议特征送入原生 pyramid.get_multiscale_feature 获取 L0/L1/L2 多尺度特征；
+    3. 各尺度用原生 single_head_i 计算占用分数并执行标准 softmax 加权融合（金字塔各层内部零重复混合！）；
+    4. 经 decode_multiscale_feature 与检测头输出预测结果。
+    """
+    from opencood.models.fuse_modules.fusion_in_one import regroup
+
+    pyramid = wrapper.model.pyramid_backbone
+    align_corners = pyramid.align_corners
+
+    z_mixed_ego, valid_ego_l0, g_clamped = mix_hetshield_protocol_features_ego(
+        heter_feature_2d=heter_feature_2d,
+        record_len=record_len,
+        affine_matrix=affine_matrix,
+        cam_valid_mask=cam_valid_mask,
+        g_list=g_list,
+        align_corners=align_corners,
+    )
+
+    # 协议层已完成唯一一次混合，下面走完全原生的多尺度金字塔与检测头（不再逐层混合）
+    feature_list = list(pyramid.get_multiscale_feature(z_mixed_ego))
+    occ_map_list = []
+    fused_feature_list = []
+
+    for lvl in range(pyramid.num_levels):
+        feat_lvl = feature_list[lvl]
+        _, _, hl, wl = feat_lvl.shape
+        occ_map = getattr(pyramid, f"single_head_{lvl}")(feat_lvl)
+        occ_map_list.append(occ_map)
+
+        if valid_ego_l0.shape[-2:] == (hl, wl):
+            v_lvl = valid_ego_l0 > 0.5
+        else:
+            v_lvl = F.interpolate(valid_ego_l0, size=(hl, wl), mode="nearest") > 0.5
+        score_lvl = (torch.sigmoid(occ_map) + 1e-4) * v_lvl.to(dtype=occ_map.dtype)
+
+        split_x = regroup(feat_lvl, record_len)
+        split_s = regroup(score_lvl, record_len)
+        out_b = []
+        for b in range(len(split_x)):
+            xb = split_x[b]
+            sb = split_s[b]
+            valid = sb > 0.0
+            any_valid = valid.any(dim=0, keepdim=True)
+            safe_logits = torch.where(valid, sb, torch.full_like(sb, -1e4))
+            safe_logits = torch.where(any_valid, safe_logits, torch.zeros_like(safe_logits))
+            weights = torch.softmax(safe_logits, dim=0) * any_valid.to(sb.dtype)
+            out_b.append(torch.sum(xb * weights, dim=0))
+        fused_feature_list.append(torch.stack(out_b, dim=0))
+
+    decoded = pyramid.decode_multiscale_feature(fused_feature_list)
+    if getattr(wrapper.model, "shrink_flag", False):
+        decoded = wrapper.model.shrink_conv(decoded)
+
+    return {
+        "pyramid": "collab",
+        "cls_preds": wrapper.model.cls_head(decoded),
+        "reg_preds": wrapper.model.reg_head(decoded),
+        "dir_preds": wrapper.model.dir_head(decoded),
+        "occ_single_list": occ_map_list,
+        "pyramid_feats": feature_list,
+        "decoded_feat": decoded,
+        "fusion_diag": {
+            "hetshield_g_list": g_clamped,
+            "mixing_layer": "protocol_feature_only_once",
+            "pyramid_per_level_mixing": False,
+        },
+    }
+
+
+def build_hetshield_fuse_fn(*args, **kwargs):
+    """已禁用旧版金字塔逐层混合闭包，强制使用 forward_hetshield_protocol_mix 在传输特征层单次混合。"""
+    raise RuntimeError(
+        "按原论文 Sec 3.4 与代码审查规范，HetShield 仅在传输特征层混合一次，严禁在金字塔逐层混合！"
+        "请调用 forward_hetshield_protocol_mix(...)。"
+    )

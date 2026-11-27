@@ -561,6 +561,14 @@ def generate_local_near0_6m_attack_heal(
             target_mask_ego = ((cls_prob > 0.15) & near_ego_bool).to(feat_clean.dtype)
 
     if target_mask_ego.sum() >= 1.0 and near_mask_local.sum() >= 1.0:
+        with torch.no_grad():
+            near_centers = _sample_local_real_targets_in_cov(cls_prob, near_ego, num_targets=2)
+            if not near_centers:
+                masked_p = (cls_prob * target_mask_ego)[0, 0]
+                flat_i = int(torch.argmax(masked_p).item())
+                w_dim = int(masked_p.shape[-1])
+                near_centers = [(flat_i // w_dim, flat_i % w_dim)]
+
         def _rem_loss(out):
             return (F.softplus(out["cls_preds"]) * target_mask_ego).sum() / (target_mask_ego.sum() + 1e-4)
 
@@ -586,6 +594,8 @@ def generate_local_near0_6m_attack_heal(
             "valid": True,
             "submode": "removal",
             "grad_finite": grad_finite,
+            "num_targets": len(near_centers),
+            "target_centers_hw": near_centers,
             "target_grids": int(target_mask_ego.sum().item()),
             "target_mask_max_clean": float(max_clean_fg),
             "prob_drop": float(prob_drop),
@@ -649,6 +659,8 @@ def generate_local_near0_6m_attack_heal(
         "valid": False,
         "submode": "none",
         "grad_finite": True,
+        "num_targets": 0,
+        "target_centers_hw": [],
         "target_grids": 0,
         "target_mask_max_clean": float(max_clean_fg),
         "prob_drop": 0.0,

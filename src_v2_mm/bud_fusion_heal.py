@@ -15,10 +15,12 @@ BUD-Fusion 核心融合与局部审计模块（研究点一 · HEAL m1+m2 多尺
    削减份额按比例无损回流至可信本车。
 """
 
+from collections import OrderedDict
 import json
 import os
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -512,12 +514,42 @@ def extract_single_cav_dev_and_signed(
     return dev_4ch, d_drop_tol, d_add_tol, cov_ego[0, 0]
 
 
+def compute_frame_high_tau_with_rule(
+    raw_scores_t4: Dict[str, Sequence[float]],
+    frame_div_p95_t4: Dict[str, float],
+    safety_mult: float = 1.15,
+    lower_bound: float = 1.45,
+) -> Tuple[OrderedDict, OrderedDict]:
+    """
+    审查规范 3.6：整车级回退阈值方法规则计算与元数据记录：
+      frame_high_tau[m] = max(calib_clean_max[m] * 1.15, 1.45)
+    同步返回 (frame_high_tau, frame_high_tau_rule) 写入标定 JSON 供论文参数表对齐。
+    """
+    frame_high_tau = OrderedDict()
+    clean_max_by_mod = OrderedDict()
+    for m in ("m1", "m2"):
+        arr = np.asarray(raw_scores_t4[m], dtype=np.float64) / max(float(frame_div_p95_t4[m]), 1e-4)
+        c_max = float(arr.max()) if arr.size > 0 else 1.0
+        clean_max_by_mod[m] = round(c_max, 6)
+        frame_high_tau[m] = round(max(c_max * float(safety_mult), float(lower_bound)), 6)
+
+    rule_meta = OrderedDict({
+        "formula": "max(calib_clean_max * 1.15, 1.45)",
+        "safety_multiplier": float(safety_mult),
+        "lower_bound": float(lower_bound),
+        "calib_clean_max_normalized": clean_max_by_mod,
+        "computed_frame_high_tau": frame_high_tau,
+        "paper_table_sync_note": "整车回退阈值已改为标定组干净数据最大值 × 1.15（下限 1.45），属方法规则改动，论文参数表同步更新。",
+    })
+    return frame_high_tau, rule_meta
+
+
 class BUDFusionHEALAuditor:
     """
     BUD-Fusion HEAL 审计器与两级软门控生成器（冻结升级版）。
 
     同时支持：
-    - 加载外部冻结基础标定 JSON 与局部门控 JSON，或注入内存级配置字典供 Fit 网格调参；
+    - 加载自包含统一标定 JSON（如 bud_calib_v1.json / bud_tuned_calibrator.json）或分离的基础+门控 JSON；
     - 可见性分档余弦门限 cos_tau_by_vis 与 gamma_cos_gate；
     - 整车级高门限回退 frame_high_tau（score_t4 > frame_high_tau[mod] 时整车回退 gate=0）。
     """
@@ -530,6 +562,7 @@ class BUDFusionHEALAuditor:
     ):
         with open(base_calib_path, "r", encoding="utf-8") as f:
             base_calib = json.load(f)
+        self.base_calib = base_calib
         self.stats = base_calib["channel_tier_stats"]
         self.main_cfg = dict(base_calib["frozen_methods"]["main_ms_cos_clear_sem"]["cfg"])
         # 强制使用稳健 div_p95 帧归一化（不使用窄分母 med_p95）
@@ -540,6 +573,8 @@ class BUDFusionHEALAuditor:
         elif gating_calib_path is not None and os.path.exists(gating_calib_path):
             with open(gating_calib_path, "r", encoding="utf-8") as f:
                 self.gating_calib = json.load(f)
+        elif "gating_params" in base_calib and "frame_div_p95" in base_calib:
+            self.gating_calib = base_calib
         else:
             self.gating_calib = None
 

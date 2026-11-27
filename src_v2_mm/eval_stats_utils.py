@@ -13,15 +13,18 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 
-def fast_voc_ap(tp_arr: np.ndarray, fp_arr: np.ndarray, score_arr: np.ndarray, gt_total: int) -> float:
-    """向量化 VOC-2010 AP（与 HEAL eval_utils.calculate_ap 严格等价）。"""
-    if gt_total <= 0 or score_arr.size == 0:
+def fast_voc_ap(tp_arr, fp_arr, score_arr, gt_total: int) -> float:
+    """向量化 VOC-2010 AP（与 HEAL eval_utils.calculate_ap 严格等价，兼容 Python list 与 ndarray）。"""
+    tp_np = np.asarray(tp_arr, dtype=np.float64).reshape(-1)
+    fp_np = np.asarray(fp_arr, dtype=np.float64).reshape(-1)
+    sc_np = np.asarray(score_arr, dtype=np.float64).reshape(-1)
+    if int(gt_total) <= 0 or sc_np.size == 0:
         return 0.0
-    order = np.argsort(-score_arr)
-    tp_c = np.cumsum(tp_arr[order], dtype=np.float64)
-    fp_c = np.cumsum(fp_arr[order], dtype=np.float64)
+    order = np.argsort(-sc_np)
+    tp_c = np.cumsum(tp_np[order], dtype=np.float64)
+    fp_c = np.cumsum(fp_np[order], dtype=np.float64)
     rec = tp_c / float(gt_total)
-    prec = tp_c / (fp_c + tp_c)
+    prec = tp_c / np.maximum(fp_c + tp_c, 1e-12)
 
     mrec = np.concatenate(([0.0], rec, [1.0]))
     mpre = np.concatenate(([0.0], prec, [0.0]))

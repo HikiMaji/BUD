@@ -331,7 +331,7 @@ def main():
             "task": "Step3 Verify HEAL m1+m2 Transport-Layer Attacks (No Defense)",
             "env_info": wrapper.env_info,
             "num_checked_sym_pad_layers": len(wrapper.checked_pad_layers),
-            "image_format_on_disk": "Q95-420 JPG (opv2v_val)",
+            "image_format_on_disk": "lossless PNG (/root/autodl-tmp/datasets/OPV2V/validate)",
             "num_sampled_frames": len(sampled_list),
             "elapsed_total_sec": round(time.time() - t_start, 2),
         },

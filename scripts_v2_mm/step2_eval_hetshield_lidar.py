@@ -180,8 +180,8 @@ def main():
     res_dir = os.path.join(PROJECT_ROOT, "results_rq1_v2_mm")
     os.makedirs(res_dir, exist_ok=True)
 
-    train_dir = os.path.join(PROJECT_ROOT, "data_links", "opv2v_train")
-    val_dir = os.path.join(PROJECT_ROOT, "data_links", "opv2v_val")
+    train_dir = "/root/autodl-tmp/datasets/OPV2V/train"
+    val_dir = "/root/autodl-tmp/datasets/OPV2V/validate"
 
     print("[Step 2] Initializing dataset and models on VALIDATION set (严禁接触 test 集)...")
     train_ds, _ = load_opv2v_split_dataset(CFG_PATH, train_dir, train_dir, is_train=False)

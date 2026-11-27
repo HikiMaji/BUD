@@ -66,7 +66,7 @@ def _patched_find_camera_files(cav_path, timestamp, sensor="camera"):
 
 OPV2VBaseDataset.find_camera_files = _patched_find_camera_files
 
-VAL_DIR = "/root/autodl-tmp/proj_dir2_hetero_trust/data_links/opv2v_val"
+VAL_DIR = "/root/autodl-tmp/datasets/OPV2V/validate"
 STAGE2_M2_DIR = "/root/autodl-tmp/proj_dir2_hetero_trust/checkpoints_v2_mm/heal_official/stage2/m2_alignto_m1"
 FINAL_INFER_DIR = "/root/autodl-tmp/proj_dir2_hetero_trust/checkpoints_v2_mm/heal_official/final_infer"
 ASSIGN_4MOD = os.path.join(HEAL_ROOT, "opencood/modality_assign/opv2v_4modality.json")
@@ -447,7 +447,7 @@ def main():
             "val_dir": VAL_DIR,
             "efficientnet_pytorch_installed": __import__("efficientnet_pytorch").__version__,
             "padding_fix_applied": "symmetric (0.7.0 behavior: (1,1,1,1)/(2,2,2,2) on 5 stride=2 layers)",
-            "image_format_on_disk": "Q95-420 JPG (opv2v_val)",
+            "image_format_on_disk": "lossless PNG (/root/autodl-tmp/datasets/OPV2V/validate)",
             "note_visibility": "opv2v_val 当前未含 additional-001.zip 中的 bev_visibility.png，单车评估同步报告全量 LiDAR GT 与基于 ego .pcd 点云 pts>=1/5/10 近似可见性过滤结果",
         },
         "m2_stage2_no_102.4": run_m2_single_or_no(ckpt_s2, 102.4, "no", device, calc_vis_and_radial=False),

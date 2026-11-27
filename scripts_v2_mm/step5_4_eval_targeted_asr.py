@@ -54,26 +54,30 @@ from src_v2_mm.heal_attacks import (
     generate_local_removal_heal,
 )
 from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
-from src_v2_mm.hetshield_heal import HetShieldHEALDefender, build_hetshield_fuse_fn
+from src_v2_mm.hetshield_heal import HetShieldHEALDefender, forward_hetshield_protocol_mix
 from src_v2_mm.step4_1_v2_core import (
-    DEFAULT_CLEAR_PTS_TAU,
     DEFAULT_LOS_OCC_TAU,
     GRID_RES,
     MIN_XY,
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_HETSHIELD_CALIB_JSON,
+    V3_SPLITS_JSON,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
     compute_ego_expected_pts_and_los_256,
     extract_frame_context_and_clean,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
 )
 
-DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a5_base_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_v3", "a5_bud_frozen_calibrator.json")
-DEFAULT_HS_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a2_hetshield_calib.json")
+DEFAULT_EVAL_SPLIT = V3_SPLITS_JSON
+DEFAULT_BASE_CALIB = V3_BUD_CALIB_V1_JSON
+DEFAULT_FROZEN_GATING = V3_BUD_TUNED_JSON
+DEFAULT_HS_CALIB = V3_HETSHIELD_CALIB_JSON
 DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_v3", "step5_4_asr_seq_cache")
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_v3", "step5_4_targeted_asr_report.json")
 
@@ -316,8 +320,8 @@ def _eval_methods_and_asr(
         hs_res = _score_hs_frame(hd, wrapper, cur_p, f_cur, seq_name, idx)
         g_list = [float(x["g_k"]) for x in hs_res]
         with torch.no_grad():
-            out_hs = wrapper.forward_from_protocol(
-                f_cur, rlen, amat, mods_l, custom_fuse_fn=build_hetshield_fuse_fn(g_list, device=str(wrapper.device_obj))
+            out_hs = forward_hetshield_protocol_mix(
+                wrapper, f_cur, rlen, amat, mods_l, cur_p["cam_valid_mask"], g_list
             )
             hs_pb, hs_ps, _ = wrapper.decode_boxes(b_post, out_hs, ds)
         res[hs_name], near_gt_res[hs_name] = _eval_boxes(hs_pb, hs_ps)
@@ -364,9 +368,8 @@ def _run_one_sequence(
             acc_dict[key][m][1] += int(t)
 
     # === Part 1: 2 车跨模态异构对（1 本车 m1 + 1 协作者 m1/m2） ===
+    c_tau, l_tau = require_visibility_v2_taus(auditor.gating_calib)
     for fi, idx in enumerate(idxs):
-        c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else DEFAULT_CLEAR_PTS_TAU
-        l_tau = float(vis_v2.get("los_occ_tau", DEFAULT_LOS_OCC_TAU)) if vis_v2 is not None else DEFAULT_LOS_OCC_TAU
         b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         raw_b1 = train_utils.to_device(ds_m1.collate_batch_test([ds_m1[idx]]), "cpu")
         b_post = train_utils.to_device(_slim_batch_for_postprocess(raw_b1), wrapper.device_obj)
@@ -580,7 +583,7 @@ def _aggregate_bucket(seq_order: list, seq_caches: dict, section_key: str, metho
 
 def main():
     parser = argparse.ArgumentParser(description="步骤 ⑤-4 定向攻击成功率 ASR 全基线同台评测")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--frozen_gating_json", type=str, default=DEFAULT_FROZEN_GATING)

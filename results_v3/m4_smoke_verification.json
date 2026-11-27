@@ -1,0 +1,138 @@
+{
+  "all_stages_exit_zero": true,
+  "verified_files": {
+    "bud_calib_v0.json": {
+      "size_bytes": 205951,
+      "top_keys": [
+        "meta",
+        "visibility_v2",
+        "channel_tier_stats",
+        "frozen_methods",
+        "frame_div_p95",
+        "frame_high_tau",
+        "frame_high_tau_rule",
+        "pixel_cos_by_vis_bg_quantiles",
+        "pixel_cos_by_vis_fg_quantiles",
+        "gating_params"
+      ],
+      "has_claim": true
+    },
+    "bud_calib_v1.json": {
+      "size_bytes": 205957,
+      "top_keys": [
+        "meta",
+        "visibility_v2",
+        "channel_tier_stats",
+        "frozen_methods",
+        "frame_div_p95",
+        "frame_high_tau",
+        "frame_high_tau_rule",
+        "pixel_cos_by_vis_bg_quantiles",
+        "pixel_cos_by_vis_fg_quantiles",
+        "gating_params"
+      ],
+      "has_claim": true
+    },
+    "bud_calib_a1_before.json": {
+      "size_bytes": 205910,
+      "top_keys": [
+        "meta",
+        "visibility_v2",
+        "channel_tier_stats",
+        "frozen_methods",
+        "frame_div_p95",
+        "frame_high_tau",
+        "frame_high_tau_rule",
+        "pixel_cos_by_vis_bg_quantiles",
+        "pixel_cos_by_vis_fg_quantiles",
+        "gating_params"
+      ],
+      "has_claim": true
+    },
+    "hetshield_calib_v3.json": {
+      "size_bytes": 5740,
+      "top_keys": [
+        "meta",
+        "train_mse_history",
+        "fit_tail_one_step_mse",
+        "paper_default_params",
+        "fit_tuned_shared_tau_p95",
+        "fit_tuned_shared_tau_p98",
+        "fit_persensor_tau_p95",
+        "fit_honest_gk_lt_05_rate_paper_default",
+        "fit_clean_component_distributions",
+        "fit_clean_sk_quantiles"
+      ],
+      "has_claim": true
+    },
+    "m6_smoke_report.json": {
+      "size_bytes": 131542,
+      "top_keys": [
+        "meta",
+        "decisions",
+        "pairwise_ablations_after_minus_before",
+        "methods_vs_no_defense",
+        "b4_gamma_occluded_tradeoff",
+        "visibility_mask_baseline",
+        "hetshield_diagnostics"
+      ],
+      "has_claim": true
+    },
+    "smoke_m6_decisions.json": {
+      "size_bytes": 1729,
+      "top_keys": [
+        "meta",
+        "per_modification_verdicts",
+        "locked_method_switches"
+      ],
+      "has_claim": true
+    },
+    "bud_tuned_calibrator.json": {
+      "size_bytes": 208375,
+      "top_keys": [
+        "meta",
+        "visibility_v2",
+        "channel_tier_stats",
+        "frozen_methods",
+        "frame_div_p95",
+        "frame_high_tau",
+        "frame_high_tau_rule",
+        "pixel_cos_by_vis_bg_quantiles",
+        "pixel_cos_by_vis_fg_quantiles",
+        "gating_params",
+        "select_chosen_eval"
+      ],
+      "has_claim": true
+    },
+    "grid_search_records.json": {
+      "size_bytes": 56715,
+      "top_keys": [
+        "meta",
+        "no_defense_select_reference",
+        "bud_fusion_search"
+      ],
+      "has_claim": true
+    },
+    "baselines_tuned_thresholds.json": {
+      "size_bytes": 52010,
+      "top_keys": [
+        "meta",
+        "hetshield_paper_fixed",
+        "hetshield_tuned",
+        "hetshield_persensor",
+        "lucia"
+      ],
+      "has_claim": true
+    },
+    "m8_smoke_report.json": {
+      "size_bytes": 126980,
+      "top_keys": [
+        "meta",
+        "methods_vs_no_defense",
+        "paired_bud_vs_baselines"
+      ],
+      "has_claim": true
+    }
+  },
+  "smoke_temp_dir_cleaned": true
+}

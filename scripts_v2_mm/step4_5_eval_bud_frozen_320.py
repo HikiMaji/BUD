@@ -51,9 +51,9 @@ from src_v2_mm.heal_base_wrapper import HEALBaseWrapper
 from src_v2_mm.step4_1_v2_core import (
     GRID_RES,
     MIN_XY,
+    OPV2V_TRAIN_DIR,
     PROTO_H,
     PROTO_W,
-    TRAIN_FULL19_DIR,
     _masked_avg_pool3x3,
     assign_dist5_vis3_indices_v2,
     build_bev_grid_xy_256,
@@ -62,12 +62,16 @@ from src_v2_mm.step4_1_v2_core import (
     extract_frame_context_and_clean,
     find_exact_fpr_threshold,
     load_ego_lidar_np,
+    require_visibility_v2_taus,
+    V3_BUD_CALIB_V1_JSON,
+    V3_BUD_TUNED_JSON,
+    V3_SPLITS_JSON,
 )
 
-DEFAULT_EVAL_SPLIT = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_3_eval320_split.json")
-DEFAULT_BASE_CALIB = os.path.join(PROJ_ROOT, "results_v3", "a5_base_calibrator.json")
+DEFAULT_EVAL_SPLIT = V3_SPLITS_JSON
+DEFAULT_BASE_CALIB = V3_BUD_CALIB_V1_JSON
 DEFAULT_OLD_GATING = os.path.join(PROJ_ROOT, "results_rq1_v2_mm", "step4_2_bud_gating_calibrator.json")
-DEFAULT_FROZEN_GATING = os.path.join(PROJ_ROOT, "results_v3", "a5_bud_frozen_calibrator.json")
+DEFAULT_FROZEN_GATING = V3_BUD_TUNED_JSON
 DEFAULT_CACHE_DIR = os.path.join(PROJ_ROOT, "results_v3", "step4_5_seq_cache")
 DEFAULT_OUT_JSON = os.path.join(PROJ_ROOT, "results_v3", "step4_5_bud_frozen_320_report.json")
 
@@ -317,9 +321,8 @@ def _eval_one_sequence(
             if blind_idxs:
                 seq_rec["blind_valid_only"][mod][cond][meth] += sum(1 for bi in blind_idxs if r05[4][bi])
 
+    c_tau, l_tau = require_visibility_v2_taus(auditor_frozen.gating_calib)
     for fi, idx in enumerate(indices):
-        c_tau = float(vis_v2["clear_pts_tau"]) if vis_v2 is not None else 73.853
-        l_tau = float(vis_v2.get("los_occ_tau", 0.50)) if vis_v2 is not None else 0.50
         b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
         d_idx = b["d_idx"]
         v_idx = b["v_idx"]
@@ -653,7 +656,7 @@ def _aggregate_with_paired_bootstrap(seq_names: list, seq_caches: dict) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="冻结版 BUD-Fusion Dev-320 全维度验收（含成对 Bootstrap 95% CI 与 2 种新攻击）")
-    parser.add_argument("--data_dir", type=str, default=TRAIN_FULL19_DIR)
+    parser.add_argument("--data_dir", type=str, default=OPV2V_TRAIN_DIR)
     parser.add_argument("--eval_split_json", type=str, default=DEFAULT_EVAL_SPLIT)
     parser.add_argument("--base_calib_json", type=str, default=DEFAULT_BASE_CALIB)
     parser.add_argument("--old_gating_json", type=str, default=DEFAULT_OLD_GATING)

@@ -121,6 +121,7 @@ from src_v2_mm.bud_fusion_heal import (  # noqa: E402
     build_directional_gate_map,
     build_fg_mask,
     build_gated_fuse_fn,
+    compute_frame_high_tau_with_rule,
     redistribute_weights_ego_only,
     redistribute_weights_trusted_other,
 )
@@ -128,6 +129,8 @@ from scripts_v2_mm.eval_standard_suite_v3 import build_visibility_mask_gate  # n
 from src_v2_mm.hetshield_heal import (  # noqa: E402
     HetShieldHEALDefender,
     build_hetshield_fuse_fn,
+    forward_hetshield_protocol_mix,
+    mix_hetshield_protocol_features_ego,
 )
 from src_v2_mm.sprint_metrics_v3 import (  # noqa: E402
     compute_honest_suppression_stats,
@@ -138,8 +141,33 @@ from src_v2_mm.sprint_metrics_v3 import (  # noqa: E402
 )
 
 
-class _DummyPyramidBackbone:
-    align_corners = False
+class _DummyPyramidBackbone(nn.Module):
+    def __init__(self, c_list=(8, 16, 32)):
+        super().__init__()
+        self.align_corners = False
+        self.num_levels = 3
+        self.get_multiscale_calls = 0
+        self.last_input_to_pyramid = None
+        self.l0 = nn.Conv2d(c_list[0], c_list[0], kernel_size=1, bias=False)
+        self.l1 = nn.Conv2d(c_list[0], c_list[1], kernel_size=2, stride=2, bias=False)
+        self.l2 = nn.Conv2d(c_list[1], c_list[2], kernel_size=2, stride=2, bias=False)
+        self.single_head_0 = nn.Conv2d(c_list[0], 1, kernel_size=1)
+        self.single_head_1 = nn.Conv2d(c_list[1], 1, kernel_size=1)
+        self.single_head_2 = nn.Conv2d(c_list[2], 1, kernel_size=1)
+        for m in (self.single_head_0, self.single_head_1, self.single_head_2):
+            nn.init.constant_(m.weight, 0.0)
+            nn.init.constant_(m.bias, 1.0)
+
+    def get_multiscale_feature(self, x: torch.Tensor):
+        self.get_multiscale_calls += 1
+        self.last_input_to_pyramid = x.detach().clone()
+        f0 = self.l0(x)
+        f1 = self.l1(f0)
+        f2 = self.l2(f1)
+        return [f0, f1, f2]
+
+    def decode_multiscale_feature(self, fused_list):
+        return fused_list[0]
 
 
 class _DummyFusionNet(nn.Module):
@@ -157,8 +185,11 @@ class _DummyFusionNet(nn.Module):
 class _DummyModel:
     def __init__(self):
         self.pyramid_backbone = _DummyPyramidBackbone()
-        self. shrink_flag = False
+        self.shrink_flag = False
         self.fusion_net = _DummyFusionNet()
+        self.cls_head = nn.Conv2d(8, 2, kernel_size=1)
+        self.reg_head = nn.Conv2d(8, 7, kernel_size=1)
+        self.dir_head = nn.Conv2d(8, 2, kernel_size=1)
 
 
 class _DummyWrapper:
@@ -354,17 +385,28 @@ class TestSprintCS2027CPU(unittest.TestCase):
         self.assertTrue(bool(fg_v1[100, 100].item())) # Occluded 诚实补盲前景正常保留
 
     def test_a1_single_visibility_function(self):
-        """[A1 单测] 旧版 0.33/0.67 可见性函数已彻底移除，assign_dist5_vis3_indices_v2 分档准确。"""
+        """[A1 & 审查 3.4 单测] 旧版可见性函数与硬编码 73.853 已彻底移除，强制显式传入正数 clear_pts_tau。"""
         self.assertFalse(hasattr(step4_1_v2_core, "assign_dist5_vis3_indices"))
+        self.assertFalse(hasattr(step4_1_v2_core, "DEFAULT_CLEAR_PTS_TAU"))
         dist = torch.tensor([[[[4.0, 15.0, 55.0]]]])
         los = torch.tensor([[[[0.9, 0.9, 0.2]]]])
         exp_pts = torch.tensor([[[[150.0, 20.0, 100.0]]]])
-        d_i, v_i = step4_1_v2_core.assign_dist5_vis3_indices_v2(dist, los, exp_pts, clear_pts_tau=73.853, los_occ_tau=0.50)
+        # 不传 clear_pts_tau 必须立即报 TypeError
+        with self.assertRaises(TypeError):
+            step4_1_v2_core.assign_dist5_vis3_indices_v2(dist, los, exp_pts)
+        # 传非法 clear_pts_tau <= 0 必须报 ValueError
+        with self.assertRaises(ValueError):
+            step4_1_v2_core.assign_dist5_vis3_indices_v2(dist, los, exp_pts, clear_pts_tau=0.0)
+        # require_visibility_v2_taus 缺失字段时必须报 ValueError
+        with self.assertRaises(ValueError):
+            step4_1_v2_core.require_visibility_v2_taus({})
+
+        d_i, v_i = step4_1_v2_core.assign_dist5_vis3_indices_v2(dist, los, exp_pts, clear_pts_tau=80.0, los_occ_tau=0.50)
         self.assertEqual(d_i.flatten().tolist(), [0, 2, 4])
         self.assertEqual(v_i.flatten().tolist(), [0, 1, 2])  # Clear, Sparse, Occluded
 
     def test_a2_hetshield_alpha06_no_freeze_and_linear_blend(self):
-        """[A2 单测] 验证 HetShield 默认 α=0.6、隔离不锁死隐状态，且融合算子线性混合特征并重算占用分数。"""
+        """[A2 & 审查 3.5/3.6 单测] 验证 HetShield 默认 α=0.6、隔离不锁死隐状态、且仅在进入金字塔前的传输协议特征层混合唯一一次。"""
         hs = HetShieldHEALDefender(mode="shared", tau_th=0.3, temperature=0.1)
         self.assertAlmostEqual(hs.alpha, 0.6, places=6)
         self.assertFalse(hs.freeze_on_quarantine)
@@ -380,20 +422,42 @@ class TestSprintCS2027CPU(unittest.TestCase):
         self.assertLess(res2[0]["g_k"], 0.5)
         self.assertFalse(torch.allclose(h_before, h_after), "隔离后隐状态不应锁死在旧帧！")
 
-        # 验证 g_k = 0 时，z̃_k = z_0，且重算的占用分数与本车完全一致，最终融合结果不受极端攻击特征污染
+        # 验证旧版逐金字塔层混合 build_hetshield_fuse_fn 已硬禁用
+        with self.assertRaises(RuntimeError):
+            build_hetshield_fuse_fn([0.5])
+
+        # 验证 forward_hetshield_protocol_mix 仅在协议特征层（进入 pyramid_backbone 前）执行单次混合：
+        # 当 g_1 = 0 时，无论攻击特征多大 (999.0)，送入金字塔的协议输入及最终输出与纯本车特征严格相等！
         wrapper = _DummyWrapper()
-        f_ego = torch.ones((1, 64, 64, 64)) * 0.5
-        f_mal = torch.ones((1, 64, 64, 64)) * 999.0
-        feat_list = [torch.cat([f_ego, f_mal], dim=0)]
-        score_list = [torch.cat([torch.ones(1, 1, 64, 64), torch.ones(1, 1, 64, 64) * 50.0], dim=0)]
+        f_ego = torch.ones((1, 8, 32, 32)) * 0.5
+        f_mal = torch.ones((1, 8, 32, 32)) * 999.0
+        feat_proto_mal = torch.cat([f_ego, f_mal], dim=0)
+        feat_proto_cln = torch.cat([f_ego, f_ego], dim=0)
+        vmask = torch.ones((2, 1, 32, 32))
         rlen = torch.tensor([2])
         amat = torch.tensor([[[[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]]]])
-        fuse_zero = build_hetshield_fuse_fn([0.0], device="cpu")
-        fused_out, _ = fuse_zero(feat_list, score_list, [None], rlen, amat, ["m1", "m2"], wrapper)
-        # 当 g_1 = 0 时，z̃_1 = z_0，两车特征均为 f_ego，若占用分数 > 0 则凸组合恒等于 f_ego
-        wrapper.model.fusion_net.single_head_0.bias.data.fill_(2.0)
-        fused_out_pos, _ = fuse_zero(feat_list, score_list, [None], rlen, amat, ["m1", "m2"], wrapper)
-        self.assertTrue(torch.allclose(fused_out_pos[0][0], f_ego[0], atol=1e-5))
+
+        out_zero = forward_hetshield_protocol_mix(wrapper, feat_proto_mal, rlen, amat, ["m1", "m2"], vmask, [0.0])
+        in_to_pyr = wrapper.model.pyramid_backbone.last_input_to_pyramid
+        self.assertEqual(wrapper.model.pyramid_backbone.get_multiscale_calls, 1)
+        self.assertEqual(out_zero["fusion_diag"]["mixing_layer"], "protocol_feature_only_once")
+        self.assertFalse(out_zero["fusion_diag"]["pyramid_per_level_mixing"])
+        # 送入 pyramid_backbone 的第 1 辆车协议特征已经被混合成 f_ego！
+        self.assertTrue(torch.allclose(in_to_pyr[1], f_ego[0], atol=1e-6))
+
+        out_ref = forward_hetshield_protocol_mix(wrapper, feat_proto_cln, rlen, amat, ["m1", "m2"], vmask, [1.0])
+        self.assertTrue(torch.allclose(out_zero["cls_preds"], out_ref["cls_preds"], atol=1e-6))
+
+        # 验证审查 3.6：整车回退阈值规则 max(calib_clean_max * 1.15, 1.45) 及下限保护
+        fh_tau, fh_rule = compute_frame_high_tau_with_rule(
+            {"m1": [0.5, 1.0], "m2": [0.8, 2.0]},
+            {"m1": 1.0, "m2": 1.0},
+            safety_mult=1.15,
+            lower_bound=1.45,
+        )
+        self.assertAlmostEqual(fh_tau["m1"], 1.45, places=6)   # 1.0 * 1.15 = 1.15 < 1.45 -> 下限 1.45
+        self.assertAlmostEqual(fh_tau["m2"], 2.30, places=6)   # 2.0 * 1.15 = 2.30 > 1.45 -> 2.30
+        self.assertEqual(fh_rule["formula"], "max(calib_clean_max * 1.15, 1.45)")
 
     def test_a4_strict_metrics_and_bootstrap(self):
         """[A4 单测] 验证防刷 ASR 近真值分离、盲区 AP Ignore 非盲区真值、诚实压制比例及 Studentized Bootstrap。"""
@@ -547,6 +611,86 @@ class TestSprintCS2027CPU(unittest.TestCase):
             self.assertEqual(refreshed_map["seqC"]["303"], "m1")
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def test_gate2_splits_v3_and_m7_objective_and_near06m_and_hs2frame(self):
+        """[Gate 2 契约单测] 验证 splits_v3 解析、M7 Python list AP 打分、近场攻击返回 target_centers_hw 与 HetShield 2帧冒烟标定。"""
+        import json
+        from scripts_v2_mm.eval_standard_suite_v3 import ATTACKS_5, _resolve_eval_subset
+        from scripts_v2_mm.step5_1_train_hetshield_heal import calibrate_hetshield_single_step_protocol
+        from scripts_v2_mm.v3_m7_select_grid_search import _empty_cand_acc, _score_unified_objective
+        from src_v2_mm.heal_attacks import generate_local_near0_6m_attack_heal
+
+        # 1) 验证真实 results_v3/splits_v3.json 子集解析帧数与键名 100% 匹配
+        sp_path = os.path.join(REPO_ROOT, "results_v3", "splits_v3.json")
+        if os.path.exists(sp_path):
+            with open(sp_path, "r", encoding="utf-8") as f:
+                sp = json.load(f)
+            for sub_name, exp_cnt in (("calib", 3679), ("select", 600), ("dev_fast", 400), ("dev_full", 1113)):
+                resolved = _resolve_eval_subset(sp, sub_name)
+                tot = sum(len(v["indices"]) for v in resolved["sequences"].values())
+                self.assertEqual(tot, exp_cnt, f"{sub_name} 解析帧数 {tot} != {exp_cnt}")
+            smoke2 = _resolve_eval_subset(sp, "dev_fast", max_frames=2)
+            self.assertEqual(sum(len(v["indices"]) for v in smoke2["sequences"].values()), 2)
+
+        # 2) 验证 v3_m7 _score_unified_objective 接收 Python list 的 tp/fp/score/gt 正常打分
+        acc = _empty_cand_acc()
+        for m in ("m1", "m2"):
+            acc["clean_ap50"][m] = {"tp": [1, 1, 0], "fp": [0, 0, 1], "score": [0.95, 0.85, 0.40], "gt": 2}
+            acc["clean_blind_ap50"][m] = {"tp": [1], "fp": [0], "score": [0.80], "gt": 1}
+            for a in ATTACKS_5:
+                acc["atk_ap50"][a][m] = {"tp": [1, 0], "fp": [0, 1], "score": [0.90, 0.50], "gt": 2}
+        nd_ref = {"clean_ap50": {"m1": 1.0, "m2": 1.0}, "clean_blind_ap50": {"m1": 1.0, "m2": 1.0}}
+        sc = _score_unified_objective(acc, nd_ref)
+        self.assertIn("objective_J", sc)
+        self.assertGreater(sc["mean_5atk_ap50"], 0.4)
+
+        # 3) 验证 generate_local_near0_6m_attack_heal 返回非空 target_centers_hw
+        class _MiniNearWrapper:
+            def __init__(self):
+                self.model = types.SimpleNamespace(
+                    pyramid_backbone=types.SimpleNamespace(align_corners=False)
+                )
+                self.w = nn.Conv2d(4, 2, kernel_size=1)
+                nn.init.constant_(self.w.weight, 0.1)
+                nn.init.constant_(self.w.bias, -3.0)
+
+            def forward_from_protocol(self, feat, rlen, amat, mods):
+                # 融合两车特征，并在中心 (128, 128) 即 0~6m 近场制造高置信目标
+                fused = 0.5 * (feat[0:1] + feat[1:2])
+                cls_p = self.w(fused)
+                hot = torch.zeros_like(cls_p)
+                hot[:, 0, 127:130, 127:130] = 6.0
+                return {"cls_preds": cls_p + hot, "reg_preds": torch.zeros((1, 14, 256, 256), device=feat.device)}
+
+        mw = _MiniNearWrapper()
+        feat_in = torch.ones((2, 4, 256, 256))
+        vmask = torch.ones((2, 1, 256, 256))
+        rlen = torch.tensor([2])
+        amat = torch.tensor([[[[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]]]])
+        _, st_near = generate_local_near0_6m_attack_heal(mw, feat_in, rlen, amat, ["m1", "m2"], vmask, steps=2)
+        self.assertTrue(st_near["valid"])
+        self.assertIn("target_centers_hw", st_near)
+        self.assertGreaterEqual(len(st_near["target_centers_hw"]), 1)
+
+        # 4) 验证 HetShield 单步标定在 2 帧极短冒烟序列下非空不崩
+        hs_sh = HetShieldHEALDefender(mode="shared", tau_th=0.3).eval()
+        hs_ps = HetShieldHEALDefender(mode="persensor", tau_th=0.3).eval()
+        e_t = torch.randn(1, 64, 256, 256).half()
+        c_t = torch.randn(1, 64, 256, 256).half()
+        v_t = torch.ones((1, 1, 256, 256), dtype=torch.bool)
+        tiny_store = {
+            "seq_smoke": {
+                "indices": [10, 11],
+                "ego": [e_t, e_t],
+                "m1_cav": [c_t, c_t],
+                "m1_val": [v_t, v_t],
+                "m2_cav": [c_t, c_t],
+                "m2_val": [v_t, v_t],
+            }
+        }
+        cal_2f = calibrate_hetshield_single_step_protocol(hs_sh, hs_ps, tiny_store, ["seq_smoke"], stride=1, tail_ratio=0.85)
+        self.assertGreaterEqual(len(cal_2f["shared"]["m1"]["s_k"]), 1)
+        self.assertGreaterEqual(len(cal_2f["persensor"]["m2"]["s_k"]), 1)
 
 
 if __name__ == "__main__":

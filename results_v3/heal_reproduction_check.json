@@ -1,0 +1,305 @@
+{
+  "meta": {
+    "claim": "[临时结论 · 待人工代码复核]",
+    "stage": "M3_HEAL_official_clean_AP_reproduction",
+    "test_dir": "/root/autodl-tmp/datasets/OPV2V/test",
+    "image_format": "lossless_png",
+    "env_info": {
+      "torch": "2.0.0+cu118",
+      "efficientnet_pytorch": "0.7.0",
+      "spconv": "2.3.6"
+    },
+    "c_stage_final_defense_test_touched": false,
+    "m3_second_note": "HEAL 官方 README 明确说明公开权重包中 m3 (SECOND) 存在输入通道数缺陷，故仅与真实存在且有效的 m1 / m2 官方基准比较。",
+    "all_cavs_note": "同步报告无两车截断的全部可用协作车 (max_cav=5, comm_range=70/180) 实测结果；因原论文未单列 m3/m4 映射为 m1/m2 的全车队数字，按规范仅对真实存在的官方 YAML 数字做偏差校验。",
+    "tolerance_pct_points": 1.0,
+    "max_abs_diff_pct_points_ap50_ap70": 0.0315,
+    "hard_stop_triggered": false,
+    "failed_checks": [],
+    "elapsed_sec": 598.92
+  },
+  "official_comparisons": {
+    "m2_single_stage2_no_102.4": {
+      "source_yaml": "checkpoints_v2_mm/heal_official/stage2/m2_alignto_m1/eval_no_102.4_102.4_epoch25.yaml",
+      "ap30": {
+        "official_pct": 45.07,
+        "reproduced_pct": 45.08,
+        "diff_pct_points": 0.01,
+        "abs_diff_pct_points": 0.01,
+        "within_1pp": true
+      },
+      "ap50": {
+        "official_pct": 35.07,
+        "reproduced_pct": 35.04,
+        "diff_pct_points": -0.03,
+        "abs_diff_pct_points": 0.03,
+        "within_1pp": true
+      },
+      "ap70": {
+        "official_pct": 19.29,
+        "reproduced_pct": 19.3,
+        "diff_pct_points": 0.01,
+        "abs_diff_pct_points": 0.01,
+        "within_1pp": true
+      }
+    },
+    "m1_single_official_in_order": {
+      "source_yaml": "checkpoints_v2_mm/heal_official/final_infer/eval_intermediate0919_204.8_102.4_epoch1_use_cav1.yaml",
+      "ap30": {
+        "official_pct": 78.54,
+        "reproduced_pct": 78.53,
+        "diff_pct_points": -0.02,
+        "abs_diff_pct_points": 0.02,
+        "within_1pp": true
+      },
+      "ap50": {
+        "official_pct": 76.45,
+        "reproduced_pct": 76.44,
+        "diff_pct_points": -0.0,
+        "abs_diff_pct_points": 0.0,
+        "within_1pp": true
+      },
+      "ap70": {
+        "official_pct": 66.29,
+        "reproduced_pct": 66.32,
+        "diff_pct_points": 0.03,
+        "abs_diff_pct_points": 0.03,
+        "within_1pp": true
+      }
+    },
+    "m1_m2_collab_official_in_order": {
+      "source_yaml": "checkpoints_v2_mm/heal_official/final_infer/eval_intermediate0919_204.8_102.4_epoch1_use_cav2.yaml",
+      "ap30": {
+        "official_pct": 84.94,
+        "reproduced_pct": 84.94,
+        "diff_pct_points": -0.0,
+        "abs_diff_pct_points": 0.0,
+        "within_1pp": true
+      },
+      "ap50": {
+        "official_pct": 82.63,
+        "reproduced_pct": 82.64,
+        "diff_pct_points": 0.0,
+        "abs_diff_pct_points": 0.0,
+        "within_1pp": true
+      },
+      "ap70": {
+        "official_pct": 72.69,
+        "reproduced_pct": 72.71,
+        "diff_pct_points": 0.02,
+        "abs_diff_pct_points": 0.02,
+        "within_1pp": true
+      }
+    }
+  },
+  "all_evaluated_configurations": {
+    "m1_single_official_in_order": {
+      "config": {
+        "ckpt": "final_infer/net_epoch1.pth",
+        "comm_range": 180.0,
+        "max_cav_gt": 5,
+        "use_cav_collab": 1,
+        "detection_range": [
+          -204.8,
+          -102.4,
+          -3,
+          204.8,
+          102.4,
+          1
+        ],
+        "assignment_json": "opencood/modality_assign/opv2v_4modality_in_order.json",
+        "modality_combinations": {
+          "m1": 2170
+        },
+        "num_frames": 2170
+      },
+      "metrics": {
+        "ap30": 0.78526,
+        "ap30_pct": 78.53,
+        "ap50": 0.764444,
+        "ap50_pct": 76.44,
+        "ap70": 0.663246,
+        "ap70_pct": 66.32,
+        "gt_total": 37472,
+        "pred_total": 37092
+      },
+      "elapsed_sec": 642.84
+    },
+    "m2_single_stage2_no_102.4": {
+      "config": {
+        "ckpt": "stage2/m2_alignto_m1/net_epoch25.pth",
+        "fusion_method": "no (ego m2 detection vs all-CAVs fused GT)",
+        "comm_range": 70.0,
+        "max_cav": 5,
+        "detection_range": [
+          -102.4,
+          -102.4,
+          -3,
+          102.4,
+          102.4,
+          1
+        ],
+        "assignment_json": "opencood/modality_assign/opv2v_4modality.json",
+        "num_frames": 2170
+      },
+      "metrics": {
+        "ap30": 0.450792,
+        "ap30_pct": 45.08,
+        "ap50": 0.350426,
+        "ap50_pct": 35.04,
+        "ap70": 0.193039,
+        "ap70_pct": 19.3,
+        "gt_total": 26308,
+        "pred_total": 20105
+      },
+      "elapsed_sec": 595.9
+    },
+    "m1_m2_collab_official_in_order": {
+      "config": {
+        "ckpt": "final_infer/net_epoch1.pth",
+        "comm_range": 180.0,
+        "max_cav_gt": 5,
+        "use_cav_collab": 2,
+        "detection_range": [
+          -204.8,
+          -102.4,
+          -3,
+          204.8,
+          102.4,
+          1
+        ],
+        "assignment_json": "opencood/modality_assign/opv2v_4modality_in_order.json",
+        "modality_combinations": {
+          "m1+m2": 2170
+        },
+        "num_frames": 2170
+      },
+      "metrics": {
+        "ap30": 0.849378,
+        "ap30_pct": 84.94,
+        "ap50": 0.826377,
+        "ap50_pct": 82.64,
+        "ap70": 0.727109,
+        "ap70_pct": 72.71,
+        "gt_total": 37472,
+        "pred_total": 43283
+      },
+      "elapsed_sec": 823.26
+    },
+    "stage1_m1_all_cavs_comm70": {
+      "config": {
+        "ckpt": "stage1/Pyramid_m1_base_2023_08_14_04_28_12/net_epoch_bestval_at23.pth",
+        "fusion_method": "intermediate (all available CAVs, no 2-car truncation)",
+        "comm_range": 70.0,
+        "max_cav": 5,
+        "detection_range": [
+          -102.4,
+          -102.4,
+          -3,
+          102.4,
+          102.4,
+          1
+        ],
+        "participating_cav_count_hist": {
+          "2": 970,
+          "1": 119,
+          "3": 869,
+          "5": 101,
+          "4": 111
+        },
+        "num_frames": 2170
+      },
+      "metrics": {
+        "ap30": 0.969037,
+        "ap30_pct": 96.9,
+        "ap50": 0.963466,
+        "ap50_pct": 96.35,
+        "ap70": 0.927108,
+        "ap70_pct": 92.71,
+        "gt_total": 35685,
+        "pred_total": 41376
+      },
+      "elapsed_sec": 520.09
+    },
+    "m1_m2_all_cavs_comm70": {
+      "config": {
+        "ckpt": "final_infer/net_epoch1.pth",
+        "comm_range": 70.0,
+        "max_cav_gt": 5,
+        "use_cav_collab": 5,
+        "detection_range": [
+          -204.8,
+          -102.4,
+          -3,
+          204.8,
+          102.4,
+          1
+        ],
+        "assignment_json": "opencood/modality_assign/opv2v_4modality.json",
+        "modality_combinations": {
+          "m1+m1": 163,
+          "m1": 119,
+          "m1+m2+m2": 438,
+          "m1+m2": 679,
+          "m1+m2+m1": 199,
+          "m1+m1+m2+m2+m1": 101,
+          "m1+m1+m2+m1": 66,
+          "m1+m1+m2": 186,
+          "m1+m1+m2+m2": 45,
+          "m2+m2": 174
+        },
+        "num_frames": 2170
+      },
+      "metrics": {
+        "ap30": 0.886449,
+        "ap30_pct": 88.64,
+        "ap50": 0.870547,
+        "ap50_pct": 87.05,
+        "ap70": 0.79405,
+        "ap70_pct": 79.4,
+        "gt_total": 36743,
+        "pred_total": 42926
+      },
+      "elapsed_sec": 889.5
+    },
+    "m1_m2_all_cavs_comm180": {
+      "config": {
+        "ckpt": "final_infer/net_epoch1.pth",
+        "comm_range": 180.0,
+        "max_cav_gt": 5,
+        "use_cav_collab": 5,
+        "detection_range": [
+          -204.8,
+          -102.4,
+          -3,
+          204.8,
+          102.4,
+          1
+        ],
+        "assignment_json": "opencood/modality_assign/opv2v_4modality.json",
+        "modality_combinations": {
+          "m1+m1": 282,
+          "m1+m2+m2": 445,
+          "m1+m2+m1": 281,
+          "m1+m1+m2+m2+m1": 167,
+          "m1+m2": 538,
+          "m1+m1+m2": 148,
+          "m1+m1+m2+m2": 135,
+          "m2+m2": 174
+        },
+        "num_frames": 2170
+      },
+      "metrics": {
+        "ap30": 0.902995,
+        "ap30_pct": 90.3,
+        "ap50": 0.889834,
+        "ap50_pct": 88.98,
+        "ap70": 0.824013,
+        "ap70_pct": 82.4,
+        "gt_total": 37370,
+        "pred_total": 44175
+      },
+      "elapsed_sec": 864.31
+    }
+  }
+}
