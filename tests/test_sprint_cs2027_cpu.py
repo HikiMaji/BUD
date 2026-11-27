@@ -117,11 +117,13 @@ from src_v2_mm.a5_split_and_calib_stats import (  # noqa: E402
     build_fg_bg_vis_quantiles_with_ci_and_merging,
 )
 from src_v2_mm.bud_fusion_heal import (  # noqa: E402
+    build_directional_gate_map,
     build_fg_mask,
     build_gated_fuse_fn,
     redistribute_weights_ego_only,
     redistribute_weights_trusted_other,
 )
+from scripts_v2_mm.eval_standard_suite_v3 import build_visibility_mask_gate  # noqa: E402
 from src_v2_mm.hetshield_heal import (  # noqa: E402
     HetShieldHEALDefender,
     build_hetshield_fuse_fn,
@@ -489,6 +491,33 @@ class TestSprintCS2027CPU(unittest.TestCase):
         )
         self.assertIn("merged_from", q_fg["m2"]["Occluded"])
         self.assertGreaterEqual(len(merged_log), 1)
+
+    def test_b4_gamma_scan_and_vis_mask_gate(self):
+        """[B4 & F-P0.1 单测] 验证 γ(Occluded) 扫描单调增强遮挡区新增抑制，且可见性掩码基线门控准确。"""
+        v_idx = torch.tensor([[0, 1], [2, 0]], dtype=torch.long)
+        # pad 到 256x256 验证 build_visibility_mask_gate
+        v_256 = torch.zeros((256, 256), dtype=torch.long)
+        v_256[10:20, 10:20] = 1
+        v_256[30:40, 30:40] = 2
+        g_vm = build_visibility_mask_gate(v_256)
+        self.assertEqual(float(g_vm[0, 0, 0, 0].item()), 0.0)     # Clear -> 只用本车 G=0
+        self.assertEqual(float(g_vm[0, 0, 15, 15].item()), 1.0)   # Sparse -> 正常融合 G=1
+        self.assertEqual(float(g_vm[0, 0, 35, 35].item()), 1.0)   # Occluded -> 正常融合 G=1
+
+        # 验证 γ(Occluded) 从 0.0 增至 0.2 时，在 Occluded 区正向新增冲突处的门控值严格降低（加强伪造压制）
+        cos_comb = torch.full((256, 256), 0.95)
+        d_drop = torch.zeros((256, 256))
+        d_add = torch.full((256, 256), 0.75)
+        cov = torch.ones((256, 256), dtype=torch.bool)
+        v_occ = torch.full((256, 256), 2, dtype=torch.long)
+        g_00 = build_directional_gate_map(
+            cos_comb, d_drop, d_add, cov, v_occ, cos_tau=[1.0, 1.0, 1.0], gamma_add=[1.0, 0.3, 0.0]
+        )
+        g_02 = build_directional_gate_map(
+            cos_comb, d_drop, d_add, cov, v_occ, cos_tau=[1.0, 1.0, 1.0], gamma_add=[1.0, 0.3, 0.2]
+        )
+        self.assertAlmostEqual(float(g_00.mean().item()), 1.0, places=5)
+        self.assertLess(float(g_02.mean().item()), 0.65)
 
 
 if __name__ == "__main__":
