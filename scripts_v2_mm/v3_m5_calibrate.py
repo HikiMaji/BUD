@@ -67,12 +67,22 @@ from src_v2_mm.step4_1_v2_core import (
     load_ego_lidar_np,
 )
 
-DEFAULT_REF_FROZEN = os.path.join(
-    PROJ_ROOT if os.path.exists(PROJ_ROOT) else LOCAL_ROOT,
-    "results_rq1_v2_mm",
-    "step4_1_v2_frozen_calibrator.json",
-)
 DEFAULT_SEQ_CACHE_DIR = os.path.join(V3_RESULTS_DIR, "_m5_calib_seq_cache")
+
+# 干净自包含的冻结多尺度特征打分超参配置（彻底隔离旧 JPG Fit-11/Dev-8 的 fit_eval 与旧 tier_calib）
+CLEAN_FROZEN_METHODS_V3 = OrderedDict({
+    "main_ms_cos_clear_sem": OrderedDict({
+        "cfg": OrderedDict({
+            "q_scale": 95,
+            "top_k": 16,
+            "cos_weights": [0.25, 0.35, 0.40],
+            "frame_norm_mode": "div_p95",
+            "gamma_cos": [1.0, 1.0, 1.0],
+            "w_sem": 0.25,
+            "gamma_sem": [1.4, 0.9, 0.4],
+        })
+    })
+})
 
 
 def _atomic_write_json(path: str, obj: dict):
@@ -83,23 +93,12 @@ def _atomic_write_json(path: str, obj: dict):
     os.replace(tmp, path)
 
 
-def _default_frozen_methods_template(ref_path: str) -> dict:
-    if os.path.exists(ref_path):
-        with open(ref_path, "r", encoding="utf-8") as f:
-            return json.load(f)["frozen_methods"]
-    return {
-        "main_ms_cos_clear_sem": {
-            "cfg": {
-                "q_scale": 95,
-                "cos_weights": [0.45, 0.35, 0.20],
-                "gamma_cos": [1.20, 0.90, 0.55],
-                "gamma_sem": [1.30, 0.40, 0.00],
-                "w_sem": 0.35,
-                "top_k": 48,
-                "frame_norm_mode": "div_p95",
-            }
-        }
-    }
+def _default_frozen_methods_template() -> OrderedDict:
+    return OrderedDict({
+        "main_ms_cos_clear_sem": OrderedDict({
+            "cfg": OrderedDict(CLEAN_FROZEN_METHODS_V3["main_ms_cos_clear_sem"]["cfg"])
+        })
+    })
 
 
 def _extract_or_load_calib_sequence_to_disk(
@@ -387,7 +386,6 @@ def main():
     parser.add_argument("--min_bin_frames", type=int, default=20)
     parser.add_argument("--n_boot", type=int, default=2000)
     parser.add_argument("--max_frames", type=int, default=0, help=">0 时仅跑前 N 帧用于 M4 2帧冒烟测试")
-    parser.add_argument("--ref_frozen_json", type=str, default=DEFAULT_REF_FROZEN)
     args = parser.parse_args()
 
     t0 = time.time()
@@ -447,7 +445,7 @@ def main():
     )
     print(f"\n[M5 新 τ_N 标定结果] {json.dumps(vis_v2_cfg, ensure_ascii=False)}", flush=True)
 
-    frozen_tmpl = _default_frozen_methods_template(args.ref_frozen_json)
+    frozen_tmpl = _default_frozen_methods_template()
     active_seqs = list(seq_plan.keys())
     n_boot_eff = 50 if is_smoke else int(args.n_boot)
 

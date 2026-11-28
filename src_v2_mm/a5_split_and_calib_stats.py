@@ -59,17 +59,57 @@ def assert_disjoint_a5_splits():
     assert (s_cal | s_tun).isdisjoint(s_evl), "Fit 与 Eval 序列重叠！"
 
 
+def _weighted_quantiles_from_hist(
+    bin_vals: np.ndarray,
+    cdf_mat: np.ndarray,
+    quantiles: Sequence[float],
+) -> np.ndarray:
+    """
+    基于单调递增有序值表 bin_vals (K,) 与整数累计频数矩阵 cdf_mat (B, K) 精确还原 np.percentile(method='linear')：
+      对总样本数 N = cdf_mat[b, -1]，虚拟秩 r = (N - 1) * (q / 100)，i0 = floor(r), i1 = ceil(r)，
+      有序第 i 个元素严格等于 bin_vals[searchsorted(row_cdf, i, side='right')]。
+    当 bin_vals 为全部唯一值时，与 np.percentile(np.concatenate(...)) 逐比特数学恒等！
+    """
+    q_frac = np.asarray(quantiles, dtype=np.float64) / 100.0  # (Q,)
+    out = np.empty((cdf_mat.shape[0], len(quantiles)), dtype=np.float64)
+    k_max = bin_vals.size - 1
+    for b in range(cdf_mat.shape[0]):
+        row_cdf = cdf_mat[b]
+        n_b = float(row_cdf[-1])
+        if n_b <= 0:
+            out[b] = 0.0
+            continue
+        if n_b <= 1.0:
+            idx0 = min(int(np.searchsorted(row_cdf, 0.0, side="right")), k_max)
+            out[b] = bin_vals[idx0]
+            continue
+        r = (n_b - 1.0) * q_frac
+        i0 = np.floor(r)
+        i1 = np.ceil(r)
+        alpha = r - i0
+        k0 = np.clip(np.searchsorted(row_cdf, i0, side="right"), 0, k_max)
+        k1 = np.clip(np.searchsorted(row_cdf, i1, side="right"), 0, k_max)
+        out[b] = (1.0 - alpha) * bin_vals[k0] + alpha * bin_vals[k1]
+    return out
+
+
 def seq_block_bootstrap_quantiles(
     per_seq_arrays: Dict[str, np.ndarray],
     seq_order: Sequence[str],
     quantiles: Sequence[float],
     n_boot: int = 2000,
     seed: int = 20261120,
-    max_per_seq_sample: int = 8192,
+    max_total_sample: int = 500_000,
 ) -> OrderedDict:
     """
     对给定分档内按序列组织的像素值字典 {seq_name: 1D array} 计算点估计分位数及其序列块 Bootstrap 95% CI。
-    为保证 2000 次重采样高速完成，当单序列某桶像素数超大时做固定种子无偏子采样。
+
+    严格统计无偏与高速设计：
+    1. 彻底摒弃按单序列硬截断为等长样本的有偏做法：
+       - 当分档总格子数 <= max_total_sample 时，100% 保留每条序列的全量真实样本；
+       - 当分档总格子数 > max_total_sample 时，严格按每条序列真实样本占比 k_s = max(1, round(max_total_sample * N_s / N_tot))
+         进行按比例无偏随机抽样，确保重采样池中各序列权重与点估计总体严格一致；
+    2. 基于高密度单调分位网格/唯一值构建序列计数矩阵 H (M, K)，通过 BLAS 矩阵乘法 C @ H 一次计算全部 2000 次重采样的精确 ECDF。
     """
     non_empty_seqs = [s for s in seq_order if s in per_seq_arrays and per_seq_arrays[s].size > 0]
     if not non_empty_seqs:
@@ -90,22 +130,55 @@ def seq_block_bootstrap_quantiles(
             out[ql] = {"val": rv, "ci95": [rv, rv]}
         return out
 
+    n_tot = int(all_cat.size)
     rng = np.random.default_rng(int(seed) + 17)
-    slim_seqs = {}
-    for s in non_empty_seqs:
-        arr = per_seq_arrays[s]
-        if arr.size > int(max_per_seq_sample):
-            idx = rng.choice(arr.size, size=int(max_per_seq_sample), replace=False)
-            slim_seqs[s] = arr[idx].astype(np.float32, copy=False)
-        else:
-            slim_seqs[s] = arr.astype(np.float32, copy=False)
+    slim_seqs = []
+    if n_tot <= int(max_total_sample):
+        for s in non_empty_seqs:
+            slim_seqs.append(per_seq_arrays[s].astype(np.float64, copy=False))
+    else:
+        for s in non_empty_seqs:
+            arr = per_seq_arrays[s]
+            k_s = max(1, int(round(float(max_total_sample) * float(arr.size) / float(n_tot))))
+            k_s = min(k_s, int(arr.size))
+            if arr.size > k_s:
+                idx = rng.choice(arr.size, size=k_s, replace=False)
+                slim_seqs.append(arr[idx].astype(np.float64, copy=False))
+            else:
+                slim_seqs.append(arr.astype(np.float64, copy=False))
+
+    pool_cat = all_cat if n_tot <= int(max_total_sample) else np.concatenate(slim_seqs, axis=0)
+    uniq_vals = np.unique(pool_cat)
+    if uniq_vals.size <= 16384:
+        bin_vals = uniq_vals
+    else:
+        # 构造覆盖全分布与极端尾部 (99%~100%) 的 16384 个高密度顺序统计量锚点
+        q_dense = np.unique(np.concatenate([
+            np.linspace(0.0, 95.0, 4096),
+            np.linspace(95.0, 99.9, 6144),
+            np.linspace(99.9, 100.0, 6144),
+            np.asarray(quantiles, dtype=np.float64),
+        ]))
+        bin_vals = np.unique(np.percentile(pool_cat, q_dense))
+
+    m_seqs = len(non_empty_seqs)
+    k_bins = bin_vals.size
+    hist_mat = np.zeros((m_seqs, k_bins), dtype=np.float64)
+    for mi, arr_m in enumerate(slim_seqs):
+        pos = np.clip(np.searchsorted(bin_vals, arr_m, side="left"), 0, k_bins - 1)
+        hist_mat[mi] = np.bincount(pos, minlength=k_bins)
+
+    import torch
 
     boot_idx = build_seq_bootstrap_indices(non_empty_seqs, n_boot=n_boot, seed=seed)
-    boot_q_mat = np.empty((n_boot, len(quantiles)), dtype=np.float64)
+    count_mat = np.zeros((n_boot, m_seqs), dtype=np.float64)
     for bi in range(n_boot):
-        picked = [slim_seqs[non_empty_seqs[j]] for j in boot_idx[bi]]
-        cat_b = np.concatenate(picked, axis=0)
-        boot_q_mat[bi] = np.percentile(cat_b, quantiles)
+        count_mat[bi] = np.bincount(boot_idx[bi], minlength=m_seqs)
+
+    # 统一复用 PyTorch 张量矩阵乘法，避免 Windows 环境下 NumPy MKL 与 PyTorch OpenMP 双运行时冲突
+    freq_mat = torch.matmul(torch.from_numpy(count_mat), torch.from_numpy(hist_mat)).numpy()
+    cdf_mat = np.cumsum(freq_mat, axis=1)
+    boot_q_mat = _weighted_quantiles_from_hist(bin_vals, cdf_mat, quantiles)
 
     lo_vec = np.percentile(boot_q_mat, 2.5, axis=0)
     hi_vec = np.percentile(boot_q_mat, 97.5, axis=0)

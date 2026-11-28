@@ -90,23 +90,19 @@ def main():
     assert_disjoint_a5_splits()
     os.makedirs(args.out_dir, exist_ok=True)
 
-    if os.path.exists(args.ref_base_json):
-        with open(args.ref_base_json, "r", encoding="utf-8") as f:
-            ref_frozen_methods = json.load(f)["frozen_methods"]
-    else:
-        ref_frozen_methods = {
-            "main_ms_cos_clear_sem": {
-                "cfg": {
-                    "q_scale": 95,
-                    "cos_weights": [0.45, 0.35, 0.20],
-                    "gamma_cos": [1.20, 0.90, 0.55],
-                    "gamma_sem": [1.30, 0.40, 0.00],
-                    "w_sem": 0.35,
-                    "top_k": 48,
-                    "frame_norm_mode": "div_p95",
-                }
+    ref_frozen_methods = {
+        "main_ms_cos_clear_sem": {
+            "cfg": {
+                "q_scale": 95,
+                "top_k": 16,
+                "cos_weights": [0.25, 0.35, 0.40],
+                "frame_norm_mode": "div_p95",
+                "gamma_cos": [1.0, 1.0, 1.0],
+                "w_sem": 0.25,
+                "gamma_sem": [1.4, 0.9, 0.4],
             }
         }
+    }
 
     from opencood.tools import train_utils
     from opencood.utils import eval_utils

@@ -13,7 +13,7 @@ import json
 import math
 import os
 from collections import OrderedDict
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -426,17 +426,22 @@ def extract_frame_context_and_clean(
     gy: torch.Tensor,
     clear_pts_tau: float,
     los_occ_tau: float = DEFAULT_LOS_OCC_TAU,
+    pre_b1_cpu: Optional[dict] = None,
+    pre_b2_cpu: Optional[dict] = None,
 ) -> dict:
     """
     加载单帧 m1/m2 成对样本并提取统一物理可见性（A1 唯一函数）与双覆盖区干净偏差图：
     - cov_ego_m1_full : m1 完整激光雷达覆盖范围（用于主实验、ASR、自适应攻击与 m1 标定统计）；
     - cov_ego         : m1/m2 共同摄像头视野 [66:190, 66:190]（保留用于动机实验表 2 跨传感器公平对比）。
+    支持传入 DataLoader 预取好的 pre_b1_cpu / pre_b2_cpu 以消除主线程重复 PNG 解码。
     """
     from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
     from opencood.tools import train_utils
 
-    b1 = train_utils.to_device(ds_m1.collate_batch_test([ds_m1[idx]]), wrapper.device_obj)
-    b2 = train_utils.to_device(ds_m2.collate_batch_test([ds_m2[idx]]), wrapper.device_obj)
+    b1_raw = pre_b1_cpu if pre_b1_cpu is not None else ds_m1.collate_batch_test([ds_m1[idx]])
+    b2_raw = pre_b2_cpu if pre_b2_cpu is not None else ds_m2.collate_batch_test([ds_m2[idx]])
+    b1 = train_utils.to_device(b1_raw, wrapper.device_obj)
+    b2 = train_utils.to_device(b2_raw, wrapper.device_obj)
 
     ego_pts = load_ego_lidar_np(ds_m1, idx)
     sigma_alea, los_factor, expected_pts = compute_ego_expected_pts_and_los_256(ego_pts, gx, gy, num_beams=64)

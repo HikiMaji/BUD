@@ -42,7 +42,11 @@ from scripts_v2_mm.eval_standard_suite_v3 import (
     _resolve_eval_subset,
     _slim_batch_for_postprocess,
 )
-from scripts_v2_mm.v3_m6_m8_eval_runner import _extract_prev_pair_warped, _step_hetshield_one_frame_with_prev
+from scripts_v2_mm.v3_m6_m8_eval_runner import (
+    _extract_prev_pair_warped,
+    _iter_seq_prefetched_batches,
+    _step_hetshield_one_frame_with_prev,
+)
 from src_v2_mm.baselines_robosac_lucia_heal import build_lucia_fuse_fn, cp_defense_lucia_heal
 from src_v2_mm.bud_fusion_heal import (
     BUDFusionHEALAuditor,
@@ -201,21 +205,28 @@ def _run_one_select_sequence(
     luc_accs = [_empty_cand_acc() for _ in lucia_taus]
 
     kappa = 10.0  # T = 0.1
+    last_proto_cache = {"idx": -999, "m1": None, "m2": None}
 
-    for idx in indices:
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
-        raw_b1 = train_utils.to_device(ds_m1.collate_batch_test([ds_m1[idx]]), "cpu")
-        b_post = train_utils.to_device(_slim_batch_for_postprocess(raw_b1), wrapper.device_obj)
+    for idx, b1_cpu, b2_cpu, _, pb1_cpu, pb2_cpu, _ in _iter_seq_prefetched_batches(
+        indices, sample_seqs, seq_name, ds_m1, ds_m2, ds_mix=None, need_prev=True
+    ):
+        b = extract_frame_context_and_clean(
+            wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau, pre_b1_cpu=b1_cpu, pre_b2_cpu=b2_cpu
+        )
+        b_post = train_utils.to_device(_slim_batch_for_postprocess(b1_cpu), wrapper.device_obj)
         with torch.no_grad():
             ego_out = wrapper.forward_single_agent(b["p1"]["heter_feature_2d"][0:1])
         ego_pb_np, ego_ps_np, gt_np = _decode_np(wrapper, b_post, ego_out, ds_m1)
         gt_polys = list(common_utils.convert_format(gt_np))
         occ_mask_4d = b["occ_mask_ego"].float()
 
-        for mod, p_dict, ds_ref in (("m1", b["p1"], ds_m1), ("m2", b["p2"], ds_m2)):
+        for mod, p_dict, ds_ref, p_prev_cpu_mod in (("m1", b["p1"], ds_m1, pb1_cpu), ("m2", b["p2"], ds_m2, pb2_cpu)):
             from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
 
-            prev_pair_cache = _extract_prev_pair_warped(wrapper, ds_ref, sample_seqs, seq_name, idx)
+            cached_prev_p = last_proto_cache[mod] if last_proto_cache["idx"] == idx - 1 else None
+            prev_pair_cache = _extract_prev_pair_warped(
+                wrapper, ds_ref, sample_seqs, seq_name, idx, pre_prev_cpu=p_prev_cpu_mod, pre_prev_proto=cached_prev_p
+            )
             cov_ego_mod = b["cov_ego_m1_full"] if mod == "m1" else b["cov_ego"]
             cov_2d = cov_ego_mod[0, 0]
             blind_ids = _find_blind_gts(ds_m1, idx, ego_pb_np, ego_ps_np, gt_np, gt_polys, cov_2d)
@@ -378,6 +389,9 @@ def _run_one_select_sequence(
                     else:
                         _push(luc_accs[li]["atk_ap50"][st_name][mod], r5_l)
 
+        last_proto_cache = {"idx": idx, "m1": b["p1"], "m2": b["p2"]}
+
+    last_proto_cache.clear()
     out_seq = {
         "seq_name": seq_name,
         "indices": list(indices),
@@ -407,6 +421,7 @@ def main():
     parser.add_argument("--out_grid_records_json", type=str, default=os.path.join(V3_RESULTS_DIR, "grid_search_records.json"))
     parser.add_argument("--out_baselines_tuned_json", type=str, default=V3_BASELINES_TUNED_JSON)
     parser.add_argument("--max_frames", type=int, default=0, help=">0 时仅跑前 N 帧用于 M4 2帧冒烟测试")
+    parser.add_argument("--only_seqs", type=str, default="", help="逗号分隔的序列子集，仅运行并写序列缓存供多 worker 并行加速")
     args = parser.parse_args()
 
     t0 = time.time()
@@ -518,7 +533,9 @@ def main():
     luc_tot = [_empty_cand_acc() for _ in lucia_taus]
 
     total_frames = 0
-    for s in seq_order:
+    only_set = {x.strip() for x in args.only_seqs.split(",") if x.strip()} if args.only_seqs else None
+    run_seqs = [s for s in seq_order if s in only_set] if only_set else seq_order
+    for s in run_seqs:
         idxs = select_split["sequences"][s]["indices"]
         total_frames += len(idxs)
         sq = _run_one_select_sequence(
@@ -527,17 +544,22 @@ def main():
             hs_shared_taus, hs_per_taus_m1, hs_per_taus_m2, lucia_taus,
             cache_dir=args.cache_dir, use_cache=not is_smoke,
         )
-        _merge_cand_acc(nd_tot, sq["nd_acc"])
-        for i in range(len(bud_candidates)):
-            _merge_cand_acc(bud_tot[i], sq["bud_accs"][i])
-        for i in range(len(hs_shared_taus)):
-            _merge_cand_acc(hs_sh_tot[i], sq["hs_sh_accs"][i])
-        for i in range(len(hs_per_taus_m1)):
-            _merge_cand_acc(hs_pm1_tot[i], sq["hs_pm1_accs"][i])
-        for i in range(len(hs_per_taus_m2)):
-            _merge_cand_acc(hs_pm2_tot[i], sq["hs_pm2_accs"][i])
-        for i in range(len(lucia_taus)):
-            _merge_cand_acc(luc_tot[i], sq["luc_accs"][i])
+        if only_set is None:
+            _merge_cand_acc(nd_tot, sq["nd_acc"])
+            for i in range(len(bud_candidates)):
+                _merge_cand_acc(bud_tot[i], sq["bud_accs"][i])
+            for i in range(len(hs_shared_taus)):
+                _merge_cand_acc(hs_sh_tot[i], sq["hs_sh_accs"][i])
+            for i in range(len(hs_per_taus_m1)):
+                _merge_cand_acc(hs_pm1_tot[i], sq["hs_pm1_accs"][i])
+            for i in range(len(hs_per_taus_m2)):
+                _merge_cand_acc(hs_pm2_tot[i], sq["hs_pm2_accs"][i])
+            for i in range(len(lucia_taus)):
+                _merge_cand_acc(luc_tot[i], sq["luc_accs"][i])
+
+    if only_set is not None:
+        print(f"[M7 Worker 完成] 已完成序列缓存分片: {run_seqs} ({total_frames} 帧, 耗时 {time.time() - t0:.1f}s)", flush=True)
+        return
 
     nd_ref = {
         "clean_ap50": {

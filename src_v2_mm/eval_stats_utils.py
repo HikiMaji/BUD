@@ -76,8 +76,28 @@ def paired_block_bootstrap_ap_diff(
     if boot_indices is None:
         boot_indices = build_seq_bootstrap_indices(seq_names, n_boot=n_boot, seed=seed)
 
-    val_a = _concat_seq_ap(seq_map_a, seq_names)
-    val_b = _concat_seq_ap(seq_map_b, seq_names)
+    # 一次性将可能来自 JSON 的 Python list 预转换为紧凑 np.ndarray，消除 2000 次重采样中的百万次重复装箱开销
+    norm_a = {
+        s: {
+            "tp": np.asarray(seq_map_a[s]["tp"], dtype=np.float64).reshape(-1),
+            "fp": np.asarray(seq_map_a[s]["fp"], dtype=np.float64).reshape(-1),
+            "score": np.asarray(seq_map_a[s]["score"], dtype=np.float64).reshape(-1),
+            "gt": int(seq_map_a[s]["gt"]),
+        }
+        for s in seq_names
+    }
+    norm_b = {
+        s: {
+            "tp": np.asarray(seq_map_b[s]["tp"], dtype=np.float64).reshape(-1),
+            "fp": np.asarray(seq_map_b[s]["fp"], dtype=np.float64).reshape(-1),
+            "score": np.asarray(seq_map_b[s]["score"], dtype=np.float64).reshape(-1),
+            "gt": int(seq_map_b[s]["gt"]),
+        }
+        for s in seq_names
+    }
+
+    val_a = _concat_seq_ap(norm_a, seq_names)
+    val_b = _concat_seq_ap(norm_b, seq_names)
     diff_point = val_a - val_b
 
     n_b = boot_indices.shape[0]
@@ -88,8 +108,8 @@ def paired_block_bootstrap_ap_diff(
 
     for bi in range(n_b):
         picked = [seq_list[j] for j in boot_indices[bi]]
-        aa = _concat_seq_ap(seq_map_a, picked)
-        bb = _concat_seq_ap(seq_map_b, picked)
+        aa = _concat_seq_ap(norm_a, picked)
+        bb = _concat_seq_ap(norm_b, picked)
         vals_a[bi] = aa
         vals_b[bi] = bb
         diffs[bi] = aa - bb

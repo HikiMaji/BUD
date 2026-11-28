@@ -692,6 +692,38 @@ class TestSprintCS2027CPU(unittest.TestCase):
         self.assertGreaterEqual(len(cal_2f["shared"]["m1"]["s_k"]), 1)
         self.assertGreaterEqual(len(cal_2f["persensor"]["m2"]["s_k"]), 1)
 
+    def test_gate5_unbiased_seq_bootstrap_ci_and_clean_frozen_template(self):
+        """[Gate 5 审核修复单测] 验证长短悬殊序列按真实样本占比无偏 Bootstrap（点估计严格位于 95% CI 内）且无旧 JPG 模板污染。"""
+        from scripts_v2_mm.v3_m5_calibrate import CLEAN_FROZEN_METHODS_V3, _default_frozen_methods_template
+        from src_v2_mm.a5_split_and_calib_stats import seq_block_bootstrap_quantiles
+
+        rng = np.random.default_rng(20261120)
+        # 构造长短高度悬殊且分布均值显著不同的多条序列（模拟 450 帧大序列 vs 45 帧小序列，总像素 > 500,000）
+        per_seq = {
+            "seq_huge_1": rng.normal(loc=0.18, scale=0.06, size=320_000).astype(np.float32),
+            "seq_huge_2": rng.normal(loc=0.22, scale=0.07, size=280_000).astype(np.float32),
+            "seq_small_1": rng.normal(loc=0.58, scale=0.05, size=25_000).astype(np.float32),
+            "seq_small_2": rng.normal(loc=0.62, scale=0.05, size=25_000).astype(np.float32),
+            "seq_small_3": rng.normal(loc=0.60, scale=0.05, size=25_000).astype(np.float32),
+            "seq_small_4": rng.normal(loc=0.59, scale=0.05, size=25_000).astype(np.float32),
+        }
+        seq_order = list(per_seq.keys())
+        qs = [50.0, 90.0, 95.0, 98.0, 99.8, 99.99]
+        res = seq_block_bootstrap_quantiles(per_seq, seq_order, qs, n_boot=2000, seed=20261120, max_total_sample=500_000)
+        for ql, item in res.items():
+            val = item["val"]
+            lo, hi = item["ci95"]
+            self.assertLessEqual(lo, val, f"{ql} 点估计 {val} 小于 95% CI 下界 {lo}！")
+            self.assertGreaterEqual(hi, val, f"{ql} 点估计 {val} 大于 95% CI 上界 {hi}！")
+
+        # 验证干净模板绝不包含旧 JPG fit_eval 或旧 tier_calib
+        tmpl = _default_frozen_methods_template()
+        self.assertEqual(list(tmpl["main_ms_cos_clear_sem"].keys()), ["cfg"])
+        self.assertNotIn("fit_eval", tmpl["main_ms_cos_clear_sem"])
+        self.assertNotIn("tier_calib", tmpl["main_ms_cos_clear_sem"])
+        self.assertEqual(CLEAN_FROZEN_METHODS_V3["main_ms_cos_clear_sem"]["cfg"]["top_k"], 16)
+        self.assertEqual(CLEAN_FROZEN_METHODS_V3["main_ms_cos_clear_sem"]["cfg"]["w_sem"], 0.25)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

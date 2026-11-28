@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "claim": "[临时结论 · 待人工代码复核]",
+    "subset": "dev_fast",
+    "num_frames": 400
+  },
+  "per_modification_verdicts": {
+    "A1": {
+      "keep": true,
+      "max_clean_ap50_drop_vs_before": 9e-05,
+      "mean_5atk_asr_diff_vs_before": 0.00225,
+      "rationale": "A1 消除标定与推理可见性函数不一致（方法正确性修复），干净 AP 波动在容许范围内，予以保留。"
+    },
+    "B1": {
+      "keep": true,
+      "chosen_downsample_mode": "min_pool",
+      "mean_local_asr_diff_minpool_minus_area": -0.00403,
+      "max_clean_ap50_drop_vs_area": 0.00036,
+      "rationale": "min_pool 相对 area 平均局部攻击 ASR 变化 -0.0040，最大干净 AP 降幅 0.0004 <= 0.010。"
+    },
+    "B2": {
+      "keep": true,
+      "chosen_fg_mode": "v1",
+      "mean_ghost_asr_diff_v1_minus_v0": 0.0,
+      "max_clean_blind_ap50_drop_vs_v0": 2e-05,
+      "rationale": "配对各自标定表下，v1 相对 v0 局部伪造 ASR 变化 +0.0000，盲区 AP 最大降幅 0.0000。"
+    },
+    "B3": {
+      "keep": true,
+      "chosen_enable_b3": true,
+      "multicav_ge3_clean_ap50_diff": -0.00056,
+      "multicav_ge3_1attacker_ap50_diff": 0.0022,
+      "rationale": "多车 (>=4车) 干净 AP 差值 -0.0006，单车受攻多车 AP 差值 +0.0022。"
+    },
+    "B4": {
+      "chosen_gamma_occluded": 0.1,
+      "mean_occluded_asr_reduction_at_0.1": 0.25439,
+      "max_clean_blind_ap50_drop_at_0.1": 0.00323,
+      "rationale": "γ=0.1 同时满足遮挡伪造 ASR 降幅>=2% 且盲区 AP 降幅<=0.5pt，选 0.1。"
+    }
+  },
+  "locked_method_switches": {
+    "use_a1_unified_vis": true,
+    "downsample_mode": "min_pool",
+    "fg_mode": "v1",
+    "enable_b3": true,
+    "gamma_occluded": 0.1
+  }
+}

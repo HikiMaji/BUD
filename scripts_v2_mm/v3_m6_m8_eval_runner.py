@@ -117,21 +117,77 @@ def _dist_summary_1d(vals: list) -> dict:
     }
 
 
-def _extract_prev_pair_warped(wrapper: HEALBaseWrapper, ds_ref, sample_seqs: List[str], seq_name: str, idx: int):
-    """单帧同模态仅提取一次紧邻前一帧 idx-1 的对齐协议特征，供所有攻击状态与多个 HetShield 变体零冗余复用。"""
+def _warped_pair_from_proto(wrapper: HEALBaseWrapper, p_prev: dict) -> tuple:
     from opencood.models.sub_modules.torch_transformation_utils import warp_affine_simple
-    from opencood.tools import train_utils
 
-    if not (idx > 0 and sample_seqs[idx - 1] == seq_name):
-        return None
     ac = wrapper.model.pyramid_backbone.align_corners
-    raw_prev = train_utils.to_device(ds_ref.collate_batch_test([ds_ref[idx - 1]]), wrapper.device_obj)
-    p_prev = wrapper.extract_protocol_features(raw_prev["ego"])
     fp = p_prev["heter_feature_2d"]
     tmat_p = p_prev["affine_matrix"][0, 0, 1:2]
     fc_p = warp_affine_simple(fp[1:2], tmat_p, (PROTO_H, PROTO_W), align_corners=ac)
     ve_p = (warp_affine_simple(p_prev["cam_valid_mask"][1:2].float(), tmat_p, (PROTO_H, PROTO_W), align_corners=ac) > 0.5).float()
     return (fp[0:1].detach(), fc_p.detach(), ve_p.detach())
+
+
+def _extract_prev_pair_warped(
+    wrapper: HEALBaseWrapper,
+    ds_ref,
+    sample_seqs: List[str],
+    seq_name: str,
+    idx: int,
+    pre_prev_cpu: Optional[dict] = None,
+    pre_prev_proto: Optional[dict] = None,
+):
+    """单帧同模态仅提取一次紧邻前一帧 idx-1 的对齐协议特征，优先复用已提取协议特征或预取 CPU batch。"""
+    from opencood.tools import train_utils
+
+    if not (idx > 0 and sample_seqs[idx - 1] == seq_name):
+        return None
+    if pre_prev_proto is not None:
+        return _warped_pair_from_proto(wrapper, pre_prev_proto)
+    raw_prev_cpu = pre_prev_cpu if pre_prev_cpu is not None else ds_ref.collate_batch_test([ds_ref[idx - 1]])
+    raw_prev = train_utils.to_device(raw_prev_cpu, wrapper.device_obj)
+    p_prev = wrapper.extract_protocol_features(raw_prev["ego"])
+    return _warped_pair_from_proto(wrapper, p_prev)
+
+
+def _iter_seq_prefetched_batches(
+    indices: List[int],
+    sample_seqs: List[str],
+    seq_name: str,
+    ds_m1,
+    ds_m2,
+    ds_mix=None,
+    need_prev: bool = True,
+):
+    """
+    通过多进程 DataLoader 并行后台解码当前序列所需的目标帧与紧邻前一帧 idx-1（滑动窗口最多驻留 2 帧 CPU 张量，< 120 MB），
+    彻底消除主线程每帧单核串行解码数十张 1920x1080 PNG 导致的 GPU 等待，输出逐比特数学恒等。
+    """
+    from torch.utils.data import DataLoader, Subset
+
+    prev_needed = {idx - 1 for idx in indices if need_prev and idx > 0 and sample_seqs[idx - 1] == seq_name}
+    union_idxs = sorted(set(indices) | prev_needed)
+    nw = 2 if len(union_idxs) >= 4 else 0
+    dl1 = iter(DataLoader(Subset(ds_m1, union_idxs), batch_size=1, num_workers=nw, shuffle=False, collate_fn=ds_m1.collate_batch_test))
+    dl2 = iter(DataLoader(Subset(ds_m2, union_idxs), batch_size=1, num_workers=nw, shuffle=False, collate_fn=ds_m2.collate_batch_test))
+    dlm = iter(DataLoader(Subset(ds_mix, union_idxs), batch_size=1, num_workers=nw, shuffle=False, collate_fn=ds_mix.collate_batch_test)) if ds_mix is not None else None
+    u_iter = iter(union_idxs)
+    win = {}
+
+    for idx in indices:
+        want_prev = idx - 1 if (need_prev and idx > 0 and sample_seqs[idx - 1] == seq_name) else None
+        while idx not in win:
+            u_i = next(u_iter)
+            win[u_i] = (next(dl1), next(dl2), next(dlm) if dlm is not None else None)
+        b1_c, b2_c, bm_c = win[idx]
+        if want_prev is not None and want_prev in win:
+            pb1, pb2, pbm = win[want_prev]
+        else:
+            pb1, pb2, pbm = None, None, None
+        for k in [k for k in list(win.keys()) if k < idx]:
+            win.pop(k, None)
+        yield idx, b1_c, b2_c, bm_c, pb1, pb2, pbm
+    win.clear()
 
 
 def _step_hetshield_one_frame_with_prev(
@@ -289,10 +345,16 @@ def _run_sequence_m6_or_m8(
     }
     skipped_errors = []
 
-    for idx in indices:
-        b = extract_frame_context_and_clean(wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau)
-        raw_b1 = train_utils.to_device(ds_m1.collate_batch_test([ds_m1[idx]]), "cpu")
-        b_post = train_utils.to_device(_slim_batch_for_postprocess(raw_b1), wrapper.device_obj)
+    has_hs_methods = any(ms["kind"] == "hetshield" for ms in method_specs.values()) or (stage == "m6" and cfgs.get("hs_diag_defenders") is not None)
+    last_proto_cache = {"idx": -999, "m1": None, "m2": None, "mix": None}
+
+    for idx, b1_cpu, b2_cpu, bmix_cpu, pb1_cpu, pb2_cpu, pbmix_cpu in _iter_seq_prefetched_batches(
+        indices, sample_seqs, seq_name, ds_m1, ds_m2, ds_mix=ds_mix, need_prev=has_hs_methods
+    ):
+        b = extract_frame_context_and_clean(
+            wrapper, ds_m1, ds_m2, idx, gx, gy, clear_pts_tau=c_tau, los_occ_tau=l_tau, pre_b1_cpu=b1_cpu, pre_b2_cpu=b2_cpu
+        )
+        b_post = train_utils.to_device(_slim_batch_for_postprocess(b1_cpu), wrapper.device_obj)
         with torch.no_grad():
             ego_out = wrapper.forward_single_agent(b["p1"]["heter_feature_2d"][0:1])
         ego_pb_np, ego_ps_np, gt_np = _decode_np(wrapper, b_post, ego_out, ds_m1)
@@ -300,9 +362,12 @@ def _run_sequence_m6_or_m8(
         occ_mask_4d = b["occ_mask_ego"].float()
 
         # ================= 1. 单协作车成对评测 (m1 / m2) =================
-        has_hs_methods = any(ms["kind"] == "hetshield" for ms in method_specs.values()) or (stage == "m6" and cfgs.get("hs_diag_defenders") is not None)
-        for mod, p_dict, ds_ref in (("m1", b["p1"], ds_m1), ("m2", b["p2"], ds_m2)):
-            prev_pair_cache = _extract_prev_pair_warped(wrapper, ds_ref, sample_seqs, seq_name, idx) if has_hs_methods else None
+        for mod, p_dict, ds_ref, p_prev_cpu_mod in (("m1", b["p1"], ds_m1, pb1_cpu), ("m2", b["p2"], ds_m2, pb2_cpu)):
+            cached_prev_p = last_proto_cache[mod] if last_proto_cache["idx"] == idx - 1 else None
+            prev_pair_cache = (
+                _extract_prev_pair_warped(wrapper, ds_ref, sample_seqs, seq_name, idx, pre_prev_cpu=p_prev_cpu_mod, pre_prev_proto=cached_prev_p)
+                if has_hs_methods else None
+            )
             cov_ego_mod = b["cov_ego_m1_full"] if mod == "m1" else b["cov_ego"]
             cov_2d = cov_ego_mod[0, 0]
             blind_ids = _find_blind_gts(ds_m1, idx, ego_pb_np, ego_ps_np, gt_np, gt_polys, cov_2d)
@@ -312,12 +377,38 @@ def _run_sequence_m6_or_m8(
             # Clean 无防御与基础偏差图
             out_cln, dev_cln, dd_cln, da_cln, pf_cln = _extract_pair_dev(wrapper, p_dict, feat, b["p_ego_cls"], cov_ego_mod)
             cln_pb_np, cln_ps_np, _ = _decode_np(wrapper, b_post, out_cln, ds_ref)
-            _push_ap(seq_buckets["no_defense"]["ap50"][mod], _match_standard_ap(cln_pb_np, cln_ps_np, gt_polys, 0.5))
-            _push_ap(seq_buckets["no_defense"]["ap70"][mod], _match_standard_ap(cln_pb_np, cln_ps_np, gt_polys, 0.7))
-            _push_ap(seq_buckets["no_defense"]["blind_ap50"][mod], match_blind_spot_ap_ignore_nonblind(cln_pb_np, cln_ps_np, gt_polys, blind_ids, 0.5))
+            cln_m50 = _match_standard_ap(cln_pb_np, cln_ps_np, gt_polys, 0.5)
+            cln_m70 = _match_standard_ap(cln_pb_np, cln_ps_np, gt_polys, 0.7)
+            cln_mb = match_blind_spot_ap_ignore_nonblind(cln_pb_np, cln_ps_np, gt_polys, blind_ids, 0.5)
+            _push_ap(seq_buckets["no_defense"]["ap50"][mod], cln_m50)
+            _push_ap(seq_buckets["no_defense"]["ap70"][mod], cln_m70)
+            _push_ap(seq_buckets["no_defense"]["blind_ap50"][mod], cln_mb)
 
             fg_cln_v0 = build_fg_mask(b["p_ego_cls"], pf_cln, b["v_idx"], fg_prob_tau=0.20, mode="v0")
             fg_cln_v1 = build_fg_mask(b["p_ego_cls"], pf_cln, b["v_idx"], fg_prob_tau=0.20, mode="v1")
+
+            # 单协作车 (n_cav=2) 恒等门控精确去重缓存（根据定理 B3-Case4，n_cav=2 时 enable_b3=True/False 逐元素恒等）
+            cln_gate_eval_memo = []
+
+            def _eval_clean_2cav_gated(g_t: torch.Tensor, ds_m_str: str):
+                if bool((g_t >= 1.0).all().item()):
+                    return cln_pb_np, cln_ps_np, cln_m50, cln_m70, cln_mb
+                for prev_dsm, prev_gt, prev_res in cln_gate_eval_memo:
+                    if prev_dsm == ds_m_str and torch.equal(g_t, prev_gt):
+                        return prev_res
+                with torch.no_grad():
+                    o_tmp = wrapper.forward_from_protocol(
+                        feat, rlen, amat, mods_l, custom_fuse_fn=build_gated_fuse_fn(g_t, downsample_mode=ds_m_str, enable_b3=True)
+                    )
+                pb_t, ps_t, _ = _decode_np(wrapper, b_post, o_tmp, ds_ref)
+                res_t = (
+                    pb_t, ps_t,
+                    _match_standard_ap(pb_t, ps_t, gt_polys, 0.5),
+                    _match_standard_ap(pb_t, ps_t, gt_polys, 0.7),
+                    match_blind_spot_ap_ignore_nonblind(pb_t, ps_t, gt_polys, blind_ids, 0.5),
+                )
+                cln_gate_eval_memo.append((ds_m_str, g_t, res_t))
+                return res_t
 
             # 各防御方法在 Clean 上的表现
             for mn, mspec in method_specs.items():
@@ -332,11 +423,7 @@ def _run_sequence_m6_or_m8(
                     )
                     gate_c = ar_c["gate_L0"]
                     wf_c = bool(ar_c["whole_fallback"])
-                    with torch.no_grad():
-                        o_c = wrapper.forward_from_protocol(
-                            feat, rlen, amat, mods_l,
-                            custom_fuse_fn=build_gated_fuse_fn(gate_c, downsample_mode=mspec["downsample_mode"], enable_b3=mspec["enable_b3"]),
-                        )
+                    _, _, m50_c, m70_c, mb_c = _eval_clean_2cav_gated(gate_c, mspec["downsample_mode"])
                     hst = compute_honest_suppression_stats(gate_c, cov_2d, b["v_idx"], whole_fallback=wf_c)
                     hs_acc = seq_buckets[mn]["honest_sup"][mod]
                     hs_acc["sup_grids"] += hst["suppressed_grids"]
@@ -346,13 +433,13 @@ def _run_sequence_m6_or_m8(
                     for vn in VIS_NAMES_3:
                         hs_acc["by_vis"][vn][0] += hst["by_visibility"][vn]["suppressed_grids"]
                         hs_acc["by_vis"][vn][1] += hst["by_visibility"][vn]["total_grids"]
+                    _push_ap(seq_buckets[mn]["ap50"][mod], m50_c)
+                    _push_ap(seq_buckets[mn]["ap70"][mod], m70_c)
+                    _push_ap(seq_buckets[mn]["blind_ap50"][mod], mb_c)
+                    continue
                 elif kind == "vis_mask":
                     gate_c = build_visibility_mask_gate(b["v_idx"]).to(device=feat.device)
-                    with torch.no_grad():
-                        o_c = wrapper.forward_from_protocol(
-                            feat, rlen, amat, mods_l,
-                            custom_fuse_fn=build_gated_fuse_fn(gate_c, downsample_mode="min_pool", enable_b3=True),
-                        )
+                    _, _, m50_c, m70_c, mb_c = _eval_clean_2cav_gated(gate_c, "min_pool")
                     hst = compute_honest_suppression_stats(gate_c, cov_2d, b["v_idx"], whole_fallback=False)
                     hs_acc = seq_buckets[mn]["honest_sup"][mod]
                     hs_acc["sup_grids"] += hst["suppressed_grids"]
@@ -360,6 +447,10 @@ def _run_sequence_m6_or_m8(
                     for vn in VIS_NAMES_3:
                         hs_acc["by_vis"][vn][0] += hst["by_visibility"][vn]["suppressed_grids"]
                         hs_acc["by_vis"][vn][1] += hst["by_visibility"][vn]["total_grids"]
+                    _push_ap(seq_buckets[mn]["ap50"][mod], m50_c)
+                    _push_ap(seq_buckets[mn]["ap70"][mod], m70_c)
+                    _push_ap(seq_buckets[mn]["blind_ap50"][mod], mb_c)
+                    continue
                 elif kind == "hetshield":
                     hs_r = _step_hetshield_one_frame_with_prev(
                         mspec["defender"], wrapper, ds_ref, sample_seqs, seq_name, idx, mod, feat, p_dict,
@@ -490,6 +581,22 @@ def _run_sequence_m6_or_m8(
 
                 fg_a_v0 = build_fg_mask(b["p_ego_cls"], pf_a, b["v_idx"], fg_prob_tau=0.20, mode="v0")
                 fg_a_v1 = build_fg_mask(b["p_ego_cls"], pf_a, b["v_idx"], fg_prob_tau=0.20, mode="v1")
+                atk_gate_eval_memo = []
+
+                def _eval_atk_2cav_gated(g_t: torch.Tensor, ds_m_str: str):
+                    if bool((g_t >= 1.0).all().item()):
+                        return nd_pb_a, nd_ps_a, _match_standard_ap(nd_pb_a, nd_ps_a, gt_polys, 0.5)
+                    for prev_dsm, prev_gt, prev_res in atk_gate_eval_memo:
+                        if prev_dsm == ds_m_str and torch.equal(g_t, prev_gt):
+                            return prev_res
+                    with torch.no_grad():
+                        o_tmp = wrapper.forward_from_protocol(
+                            f_adv, rlen, amat, mods_l, custom_fuse_fn=build_gated_fuse_fn(g_t, downsample_mode=ds_m_str, enable_b3=True)
+                        )
+                    pb_t, ps_t, _ = _decode_np(wrapper, b_post, o_tmp, ds_ref)
+                    res_t = (pb_t, ps_t, _match_standard_ap(pb_t, ps_t, gt_polys, 0.5))
+                    atk_gate_eval_memo.append((ds_m_str, g_t, res_t))
+                    return res_t
 
                 for mn, mspec in method_specs.items():
                     kind = mspec["kind"]
@@ -501,17 +608,10 @@ def _run_sequence_m6_or_m8(
                             d_drop_tol=dd_a, d_add_tol=da_a, enable_whole_fallback=True,
                             collab_fg_mask=fg_m, gamma_add_override=mspec.get("gamma_add_override"),
                         )
-                        with torch.no_grad():
-                            o_a = wrapper.forward_from_protocol(
-                                f_adv, rlen, amat, mods_l,
-                                custom_fuse_fn=build_gated_fuse_fn(ar_a["gate_L0"], downsample_mode=mspec["downsample_mode"], enable_b3=mspec["enable_b3"]),
-                            )
+                        df_pb_a, df_ps_a, m50_a = _eval_atk_2cav_gated(ar_a["gate_L0"], mspec["downsample_mode"])
                     elif kind == "vis_mask":
                         gate_vm = build_visibility_mask_gate(b["v_idx"]).to(device=f_adv.device)
-                        with torch.no_grad():
-                            o_a = wrapper.forward_from_protocol(
-                                f_adv, rlen, amat, mods_l, custom_fuse_fn=build_gated_fuse_fn(gate_vm, downsample_mode="min_pool", enable_b3=True)
-                            )
+                        df_pb_a, df_ps_a, m50_a = _eval_atk_2cav_gated(gate_vm, "min_pool")
                     elif kind == "hetshield":
                         hs_r = _step_hetshield_one_frame_with_prev(
                             mspec["defender"], wrapper, ds_ref, sample_seqs, seq_name, idx, mod, f_adv, p_dict,
@@ -519,13 +619,18 @@ def _run_sequence_m6_or_m8(
                         )
                         with torch.no_grad():
                             o_a = forward_hetshield_protocol_mix(wrapper, f_adv, rlen, amat, mods_l, vmask, [float(hs_r["g_k"])])
+                        df_pb_a, df_ps_a, _ = _decode_np(wrapper, b_post, o_a, ds_ref)
+                        m50_a = _match_standard_ap(df_pb_a, df_ps_a, gt_polys, 0.5)
                     elif kind == "lucia":
                         with torch.no_grad():
                             o_a = wrapper.forward_from_protocol(
                                 f_adv, rlen, amat, mods_l, custom_fuse_fn=build_lucia_fuse_fn(32, l1_threshold=mspec.get("l1_threshold"))
                             )
-                    df_pb_a, df_ps_a, _ = _decode_np(wrapper, b_post, o_a, ds_ref)
-                    _push_ap(seq_buckets[mn]["atk_ap50"][atk_name][mod], _match_standard_ap(df_pb_a, df_ps_a, gt_polys, 0.5))
+                        df_pb_a, df_ps_a, _ = _decode_np(wrapper, b_post, o_a, ds_ref)
+                        m50_a = _match_standard_ap(df_pb_a, df_ps_a, gt_polys, 0.5)
+                    else:
+                        raise ValueError(f"未知方法类型: {kind}")
+                    _push_ap(seq_buckets[mn]["atk_ap50"][atk_name][mod], m50_a)
                     if cands_xy:
                         st_df = evaluate_frame_asr_strict(mode_s, cands_xy, cln_pb_np, cln_ps_np, df_pb_a, df_ps_a, gt_np, s_min=s_min)
                         seq_buckets[mn]["asr"][atk_name][mod][0] += int(st_df["succ"])
@@ -535,12 +640,12 @@ def _run_sequence_m6_or_m8(
                             seq_buckets[mn]["near_gt_fab"][atk_name][mod][1] += int(st_df["near_gt_total"])
 
         # ================= 2. 多车场景 (>=3 协作车，即总车数 >=4) 干净与单攻击者 AP@0.5 =================
-        raw_m = train_utils.to_device(ds_mix.collate_batch_test([ds_mix[idx]]), wrapper.device_obj)
+        raw_m = train_utils.to_device(bmix_cpu, wrapper.device_obj)
         p_m = wrapper.extract_protocol_features(raw_m["ego"])
         feat_m = p_m["heter_feature_2d"]
         n_tot = int(feat_m.shape[0])
         if n_tot >= 4:
-            b_post_m = train_utils.to_device(_slim_batch_for_postprocess(raw_m), wrapper.device_obj)
+            b_post_m = train_utils.to_device(_slim_batch_for_postprocess(bmix_cpu), wrapper.device_obj)
             rlen_m, amat_m, mods_m, vmask_m = p_m["record_len"], p_m["affine_matrix"], list(p_m["agent_modality_list"]), p_m["cam_valid_mask"]
             with torch.no_grad():
                 o_ego_m = wrapper.forward_single_agent(feat_m[0:1])
@@ -566,8 +671,14 @@ def _run_sequence_m6_or_m8(
 
             p_prev_mc = None
             if any(ms["kind"] == "hetshield" for ms in method_specs.values()) and idx > 0 and sample_seqs[idx - 1] == seq_name:
-                raw_pm = train_utils.to_device(ds_mix.collate_batch_test([ds_mix[idx - 1]]), wrapper.device_obj)
-                p_prev_mc = wrapper.extract_protocol_features(raw_pm["ego"])
+                if last_proto_cache["idx"] == idx - 1 and last_proto_cache["mix"] is not None:
+                    p_prev_mc = last_proto_cache["mix"]
+                elif pbmix_cpu is not None:
+                    raw_pm = train_utils.to_device(pbmix_cpu, wrapper.device_obj)
+                    p_prev_mc = wrapper.extract_protocol_features(raw_pm["ego"])
+                else:
+                    raw_pm = train_utils.to_device(ds_mix.collate_batch_test([ds_mix[idx - 1]]), wrapper.device_obj)
+                    p_prev_mc = wrapper.extract_protocol_features(raw_pm["ego"])
 
             for tag_state, f_mc in (("multicav_ge3_clean_ap50", feat_m), ("multicav_ge3_atk_ap50", f_m_atk)):
                 # 预提取每辆协作车在当前多车状态下的解耦偏差图，供多个 BUD 变体复用
@@ -617,6 +728,9 @@ def _run_sequence_m6_or_m8(
                     pb_mc, ps_mc, _ = _decode_np(wrapper, b_post_m, o_mc, ds_mix)
                     _push_ap(seq_buckets[mn][tag_state], _match_standard_ap(pb_mc, ps_mc, gt_m_polys, 0.5))
 
+        last_proto_cache = {"idx": idx, "m1": b["p1"], "m2": b["p2"], "mix": p_m}
+
+    last_proto_cache.clear()
     seq_out = {
         "seq_name": seq_name,
         "indices": list(indices),
@@ -738,6 +852,7 @@ def main():
     parser.add_argument("--s_min", type=float, default=0.20)
     parser.add_argument("--n_boot", type=int, default=BOOT_N)
     parser.add_argument("--max_frames", type=int, default=0, help=">0 时仅跑前 N 帧用于 M4 2帧冒烟测试")
+    parser.add_argument("--only_seqs", type=str, default="", help="逗号分隔的序列子集，仅运行并写序列缓存供多 worker 并行加速")
     args = parser.parse_args()
 
     t0 = time.time()
@@ -840,13 +955,19 @@ def main():
 
     seq_results = OrderedDict()
     all_skipped = []
-    for s in seq_order:
+    only_set = {x.strip() for x in args.only_seqs.split(",") if x.strip()} if args.only_seqs else None
+    run_seqs = [s for s in seq_order if s in only_set] if only_set else seq_order
+    for s in run_seqs:
         sr = _run_sequence_m6_or_m8(
             args.stage, s, eval_split["sequences"][s]["indices"], wrapper, ds_m1, ds_m2, ds_mix,
             sample_seqs, gx, gy, cfgs, s_min=args.s_min, cache_dir=args.cache_dir, use_cache=not is_smoke,
         )
         seq_results[s] = sr
         all_skipped.extend(sr.get("skipped_errors", []))
+
+    if only_set is not None:
+        print(f"[{args.stage.upper()} Worker 完成] 已完成序列缓存分片: {run_seqs} (耗时 {time.time() - t0:.1f}s)", flush=True)
+        return
 
     n_boot_eff = 50 if is_smoke else int(args.n_boot)
     boot_idx = build_seq_bootstrap_indices(seq_order, n_boot=n_boot_eff, seed=BOOT_SEED)
